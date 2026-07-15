@@ -1,0 +1,27 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('facet', {
+  list: () => ipcRenderer.invoke('profiles:list'),
+  add: (payload) => ipcRenderer.invoke('profiles:add', payload),
+  remove: (payload) => ipcRenderer.invoke('profiles:remove', payload),
+  rename: (payload) => ipcRenderer.invoke('profiles:rename', payload),
+  setColor: (payload) => ipcRenderer.invoke('profiles:setColor', payload),
+  reorder: (payload) => ipcRenderer.invoke('profiles:reorder', payload),
+  duplicate: (payload) => ipcRenderer.invoke('profiles:duplicate', payload),
+  launch: (payload) => ipcRenderer.invoke('profiles:launch', payload),
+  contextMenu: (payload) => ipcRenderer.invoke('profiles:menuAt', payload),
+  exportAll: () => ipcRenderer.invoke('profiles:export'),
+  importAll: (payload) => ipcRenderer.invoke('profiles:import', payload),
+  hide: () => ipcRenderer.invoke('panel:hide'),
+  resize: (payload) => ipcRenderer.invoke('panel:resize', payload),
+  openPath: (pathToOpen) => ipcRenderer.invoke('shell:open', { pathToOpen }),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  setSettings: (patch) => ipcRenderer.invoke('settings:set', patch),
+  pickClaudeExe: () => ipcRenderer.invoke('settings:pickClaudeExe'),
+  quit: () => ipcRenderer.invoke('app:quit'),
+  onRunningChanged: (cb) => ipcRenderer.on('running-changed', (_e, list) => cb(list)),
+  onGotoView: (cb) => ipcRenderer.on('goto-view', (_e, view) => cb(view)),
+  onStartRename: (cb) => ipcRenderer.on('start-rename', (_e, payload) => cb(payload)),
+  onStartRemove: (cb) => ipcRenderer.on('start-remove', (_e, payload) => cb(payload)),
+  onRefresh: (cb) => ipcRenderer.on('refresh', () => cb()),
+});

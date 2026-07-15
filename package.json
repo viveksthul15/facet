@@ -1,0 +1,49 @@
+{
+  "name": "facet",
+  "productName": "Facet",
+  "version": "0.1.0",
+  "description": "One identity, many facets. A tiny Windows tray launcher that runs Claude Desktop on the right session, every time.",
+  "main": "main.js",
+  "scripts": {
+    "start": "npm run icons && electron .",
+    "icons": "node scripts/generate-icons.js",
+    "build": "npm run icons && electron-builder --win --x64"
+  },
+  "author": "vivek",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.vivek.facet",
+    "productName": "Facet",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "ui/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "assets/tray.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Facet",
+      "uninstallDisplayName": "Facet — Claude profile launcher"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    }
+  }
+}
