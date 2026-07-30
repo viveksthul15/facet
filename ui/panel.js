@@ -11,7 +11,9 @@ const state = {
   settings: {},
   lockedSettings: [],
   portable: false,
-  add: { name: '', color: 'indigo', error: '' },
+  add: { name: '', color: 'indigo', error: '', preflight: null },
+  orphans: [],
+  orphanCount: 0,
   adopt: { name: 'Personal', color: 'emerald', error: '' },
   rename: { id: null, value: '' },
   hotkeyRecording: false,
@@ -119,6 +121,7 @@ function viewPopulated() {
         'set the path manually'),
       '.',
     ),
+    state.adoptable && renderAdoptBanner(),
     el('div', { class: 'lane-list', role: 'listbox' },
       ...state.profiles.map((p, i) => renderLaneRow(p, i)),
     ),
@@ -234,7 +237,8 @@ function renderAdoptBanner() {
 function viewAdd() {
   const claudeOK = !!state.claudeExe;
   const slug = slugify(state.add.name || '');
-  const previewPath = `${state.paths.root}\\profiles\\claude-${slug || '…'}`;
+  const previewPath = `${state.paths.root}\\profiles\\${slug || '…'}`;
+  const pre = state.add.preflight;
   return el('div', { class: 'panel' },
     el('div', { class: 'panel-head' },
       el('div', { class: 'panel-title' }, brandMark(), 'Add profile'),
@@ -243,6 +247,22 @@ function viewAdd() {
       ),
     ),
     el('div', { class: 'form' },
+      // Prominent nudge if there's still a signed-in Claude session and no adopted profile
+      state.adoptable && el('div', { class: 'adopt-inline' },
+        el('div', { class: 'adopt-inline-body' },
+          el('span', { class: 'accent-dot' }),
+          el('div', {},
+            el('div', { class: 'adopt-inline-head' }, 'Existing Claude session detected'),
+            el('div', { class: 'adopt-inline-sub' },
+              'Creating a new profile signs you out. To keep your current account, ',
+              el('a', { href: '#', onclick: (e) => { e.preventDefault(); setView(state.profiles.length ? 'populated' : 'empty'); },
+                style: { color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer' } },
+                'adopt it instead'),
+              '.',
+            ),
+          ),
+        ),
+      ),
       el('div', { class: 'field' },
         el('label', {}, 'App'),
         el('div', { class: 'app-picker' },
@@ -261,11 +281,26 @@ function viewAdd() {
         el('div', { class: 'input-wrap' },
           el('input', { id: 'profile-name', type: 'text', value: state.add.name, spellcheck: 'false',
             placeholder: 'e.g. Client — Novacore',
-            oninput: (e) => { state.add.name = e.target.value; state.add.error = ''; renderInline(); },
+            oninput: (e) => { state.add.name = e.target.value; state.add.error = ''; runPreflight(); renderInline(); },
             onkeydown: (e) => { if (e.key === 'Enter') onCreate(); },
           }),
         ),
         el('div', { class: 'hint' }, 'Data directory: ', el('b', {}, previewPath)),
+        // Preflight surfaces — duplicate-name error, or orphan-data warning with choose-your-own actions
+        pre && pre.reason === 'duplicate-name' && el('div', { class: 'error' },
+          'A profile with that name already exists. Pick a different name.'),
+        pre && pre.warn === 'orphan-exists' && el('div', { class: 'preflight-warn' },
+          el('div', { class: 'preflight-head' }, ICONS.warn(),
+            pre.hasSession
+              ? el('span', {}, el('b', {}, 'Existing session data at this slug. '),
+                  'Reusing it will bring back that account, not create a fresh signed-out one.')
+              : el('span', {}, el('b', {}, 'Old data folder for this slug exists. '),
+                  'It has no session state — safe to reuse or wipe.')),
+          el('div', { class: 'preflight-actions' },
+            el('button', { class: 'btn-mini ghost', onclick: () => onCreateWith('recover') }, 'Reuse existing data'),
+            el('button', { class: 'btn-mini destroy', onclick: () => onCreateWith('wipe') }, 'Wipe & start fresh'),
+          ),
+        ),
         state.add.error && el('div', { class: 'error' }, state.add.error),
       ),
       el('div', { class: 'field' },
@@ -281,8 +316,12 @@ function viewAdd() {
       ),
       el('div', { class: 'form-foot' },
         el('button', { class: 'btn-secondary', onclick: () => setView(state.profiles.length ? 'populated' : 'empty') }, 'Cancel'),
-        el('button', { class: 'btn-primary', disabled: !state.add.name.trim() || !claudeOK, onclick: onCreate },
-          'Create & launch', ICONS.arrowRight()),
+        el('button', {
+          class: 'btn-primary',
+          disabled: !state.add.name.trim() || !claudeOK
+            || (pre && (pre.reason === 'duplicate-name' || pre.warn === 'orphan-exists')),
+          onclick: onCreate,
+        }, 'Create & launch', ICONS.arrowRight()),
       ),
     ),
   );
@@ -439,6 +478,19 @@ function viewSettings() {
             ICONS.upload(), 'Import…'),
         ),
       ]),
+      state.orphanCount > 0 && renderSettingsSection(
+        `Recovery · ${state.orphanCount} unlinked data folder${state.orphanCount === 1 ? '' : 's'}`,
+        [
+          el('div', { class: 'hint' },
+            'Data folders under ', el('code', {}, 'profiles\\'),
+            ' that no profile currently claims. Left over from removed or renamed profiles.',
+          ),
+          el('div', { class: 'settings-actions' },
+            el('button', { class: 'btn-secondary', onclick: () => setView('recovery') },
+              ICONS.folder(), 'Review & recover…'),
+          ),
+        ],
+      ),
       renderSettingsSection('About', [
         el('div', { class: 'hint' },
           el('b', {}, 'Facet 0.1.0'), ' — one identity, many facets.', el('br'),
@@ -450,6 +502,81 @@ function viewSettings() {
       ),
     ),
   );
+}
+
+function viewRecovery() {
+  return el('div', { class: 'panel' },
+    el('div', { class: 'panel-head' },
+      el('div', { class: 'panel-title' }, brandMark(), 'Recover profiles'),
+      el('div', { class: 'panel-head-tools' },
+        el('button', { class: 'icon-btn', onclick: () => setView('settings') }, ICONS.back()),
+      ),
+    ),
+    el('div', { class: 'form' },
+      el('div', { class: 'hint' },
+        'Old Chromium data folders in ', el('code', {}, `${state.paths.root}\\profiles`),
+        ' that no active profile claims. Recover one to bring back that session; delete to reclaim disk.',
+      ),
+      state.orphans.length === 0
+        ? el('div', { class: 'settings-current' }, el('div', { class: 'hint' }, 'No unlinked folders.'))
+        : el('div', { class: 'orphan-list' },
+            ...state.orphans.map(o => el('div', { class: 'orphan-row' },
+              el('div', { class: 'orphan-body' },
+                el('div', { class: 'orphan-slug' },
+                  el('code', {}, o.slug),
+                  o.hasSession
+                    ? el('span', { class: 'orphan-tag has-session' }, 'has session')
+                    : el('span', { class: 'orphan-tag' }, 'empty'),
+                ),
+                el('div', { class: 'orphan-meta' },
+                  `${formatBytes(o.size)}`,
+                  o.mtime && ` · last used ${formatDate(o.mtime)}`,
+                ),
+              ),
+              el('div', { class: 'orphan-actions' },
+                el('button', { class: 'icon-btn', title: 'Open folder',
+                  onclick: () => api.openPath(o.path) }, ICONS.folder()),
+                el('button', { class: 'btn-mini primary', onclick: () => onRecoverOrphan(o) }, 'Recover'),
+                el('button', { class: 'btn-mini danger', onclick: () => onDeleteOrphan(o) }, 'Delete'),
+              ),
+            )),
+          ),
+    ),
+  );
+}
+
+function formatBytes(n) {
+  if (!n) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0; while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(n >= 10 ? 0 : 1)} ${units[i]}`;
+}
+
+function formatDate(iso) {
+  try { return new Date(iso).toLocaleString(); } catch { return iso; }
+}
+
+async function onRecoverOrphan(o) {
+  // Default the display name to a titlecased slug — user can rename after
+  const name = o.slug.replace(/(^|-)([a-z])/g, (_, s, c) => (s ? ' ' : '') + c.toUpperCase());
+  const r = await api.recoverOrphan({ slug: o.slug, name, color: 'indigo' });
+  if (r && r.ok) {
+    state.orphans = await api.listOrphans();
+    await refresh(); render();
+  }
+}
+
+async function onDeleteOrphan(o) {
+  state.confirm = {
+    orphan: o,
+    onConfirm: async () => {
+      await api.deleteOrphan({ slug: o.slug });
+      state.confirm = null;
+      state.orphans = await api.listOrphans();
+      await refresh(); render();
+    },
+  };
+  render();
 }
 
 function renderSettingsSection(title, children) {
@@ -498,7 +625,25 @@ function renderOnboardingOverlay() {
 
 function confirmOverlay() {
   const c = state.confirm;
-  const dataPath = `${state.paths.root}\\profiles\\claude-${c.profile.slug}`;
+  // Orphan deletion — different copy, no data-folder checkbox
+  if (c.orphan) {
+    return el('div', { class: 'confirm-overlay',
+      onclick: (e) => { if (e.currentTarget === e.target) { state.confirm = null; render(); } } },
+      el('div', { class: 'confirm-card' },
+        el('h4', {}, `Delete data folder?`),
+        el('p', {}, 'Permanently removes ',
+          el('code', {}, `${state.paths.root}\\profiles\\${c.orphan.slug}`),
+          c.orphan.hasSession
+            ? '. That folder still holds a signed-in session — you will lose it.'
+            : '. That folder has no session data.'),
+        el('div', { class: 'actions' },
+          el('button', { class: 'cancel', onclick: () => { state.confirm = null; render(); } }, 'Cancel'),
+          el('button', { class: 'destroy', onclick: c.onConfirm }, 'Delete'),
+        ),
+      ),
+    );
+  }
+  const dataPath = `${state.paths.root}\\profiles\\${c.profile.slug}`;
   let deleteData = false;
   const checkbox = el('input', { type: 'checkbox',
     onchange: (e) => { deleteData = e.target.checked; },
@@ -538,11 +683,15 @@ async function refresh() {
   state.running = new Set(data.running);
   state.claudeExe = data.claudeExe;
   state.claudeExeSource = data.claudeExeSource;
-  state.adoptable = data.adoptable && data.profiles.length === 0;
+  // Show adopt affordance whenever the real Claude data dir exists AND no profile
+  // is already adopted. Was previously gated on profiles.length === 0, which meant
+  // you couldn't adopt once you'd created any other profile first.
+  state.adoptable = data.adoptable && !data.profiles.some(p => p.adopted);
   state.paths = data.paths;
   state.settings = data.settings || {};
   state.lockedSettings = data.lockedSettings || [];
   state.portable = !!data.portable;
+  state.orphanCount = data.orphanCount || 0;
   // Onboarding: show once if user has never seen it and no profiles yet
   if (state.settings && state.settings.onboardingComplete === false && state.profiles.length === 0) {
     state.onboarding = true;
@@ -571,17 +720,46 @@ async function onAdopt() {
 }
 
 async function onCreate() {
+  const pre = state.add.preflight;
+  // If preflight surfaced an orphan warning, the user has to choose "reuse" or "wipe"
+  // via the dedicated buttons — the main Create button is disabled in that state.
+  if (pre && pre.warn === 'orphan-exists') return;
+  return onCreateWith(null);
+}
+
+async function onCreateWith(orphanAction) {
   const name = state.add.name.trim();
   if (!name) return;
   if (!state.claudeExe) { state.add.error = 'Claude Desktop is not installed.'; render(); return; }
-  const r = await api.add({ name, color: state.add.color, adopted: false });
+  const r = await api.add({ name, color: state.add.color, adopted: false, orphanAction });
   if (!r.ok) {
-    state.add.error = r.error === 'duplicate' ? 'A profile with that name already exists.' : `Error: ${r.error}`;
-    render(); return;
+    const messages = {
+      'duplicate-name': 'A profile with that name already exists.',
+      'already-adopted': 'You can only adopt one existing Claude session.',
+      'orphan-exists': 'That name matches an old data folder — pick Reuse or Wipe first.',
+      'wipe-failed': 'Could not delete the old data folder. Close any Claude windows and try again.',
+    };
+    state.add.error = messages[r.error] || `Error: ${r.error}`;
+    render();
+    return;
   }
   await api.launch({ id: r.profile.id });
-  state.add = { name: '', color: 'indigo', error: '' };
+  state.add = { name: '', color: 'indigo', error: '', preflight: null };
   await refresh(); setView('populated');
+}
+
+let preflightSeq = 0;
+async function runPreflight() {
+  const seq = ++preflightSeq;
+  const name = state.add.name;
+  if (!name.trim()) {
+    state.add.preflight = null;
+    return;
+  }
+  const pre = await api.preflight({ name, adopted: false });
+  if (seq !== preflightSeq) return; // stale, discard
+  state.add.preflight = pre;
+  render();
 }
 
 function beginRename(p) {
@@ -670,13 +848,16 @@ async function finishOnboarding() {
 
 function setView(v) {
   state.view = v;
-  if (v === 'add') { state.add = { name: '', color: 'indigo', error: '' }; }
+  if (v === 'add') { state.add = { name: '', color: 'indigo', error: '', preflight: null }; }
   state.rename = { id: null, value: '', showColorFor: null };
   state.hotkeyRecording = false;
   render();
   if (v === 'add') setTimeout(() => document.getElementById('profile-name')?.focus(), 40);
   if (v === 'settings' && state.hotkeyRecording) {
     setTimeout(() => document.querySelector('.hotkey-recorder')?.focus(), 40);
+  }
+  if (v === 'recovery') {
+    (async () => { state.orphans = await api.listOrphans(); render(); })();
   }
 }
 
@@ -687,18 +868,36 @@ function log(msg) { console.log('[facet]', msg); }
 
 const views = {
   populated: viewPopulated, empty: viewEmpty, add: viewAdd,
-  manage: viewManage, settings: viewSettings,
+  manage: viewManage, settings: viewSettings, recovery: viewRecovery,
 };
 const root = document.getElementById('root');
 
 function render() {
   const view = state.profiles.length === 0 && state.view === 'populated' ? 'empty' : state.view;
+  // Preserve keyboard focus + caret across full re-renders. Any focused
+  // element with an id gets its selection captured and re-applied after the
+  // new DOM is in place.
+  const focused = document.activeElement;
+  const focusedId = focused && focused.id ? focused.id : null;
+  const focusedSelStart = focused && 'selectionStart' in focused ? focused.selectionStart : null;
+  const focusedSelEnd = focused && 'selectionEnd' in focused ? focused.selectionEnd : null;
+
   root.innerHTML = '';
   const panelEl = views[view]();
   // Overlays live at the panel level so they render regardless of active view
   if (state.confirm) panelEl.appendChild(confirmOverlay());
   if (state.onboarding) panelEl.appendChild(renderOnboardingOverlay());
   root.appendChild(panelEl);
+
+  if (focusedId) {
+    const next = document.getElementById(focusedId);
+    if (next) {
+      next.focus();
+      if (focusedSelStart != null && 'setSelectionRange' in next) {
+        try { next.setSelectionRange(focusedSelStart, focusedSelEnd ?? focusedSelStart); } catch {}
+      }
+    }
+  }
   requestAnimationFrame(() => {
     const p = document.querySelector('.panel');
     if (!p) return;

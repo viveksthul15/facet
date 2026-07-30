@@ -3,6 +3,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('facet', {
   list: () => ipcRenderer.invoke('profiles:list'),
   add: (payload) => ipcRenderer.invoke('profiles:add', payload),
+  preflight: (payload) => ipcRenderer.invoke('profiles:preflight', payload),
+  listOrphans: () => ipcRenderer.invoke('profiles:listOrphans'),
+  recoverOrphan: (payload) => ipcRenderer.invoke('profiles:recoverOrphan', payload),
+  deleteOrphan: (payload) => ipcRenderer.invoke('profiles:deleteOrphan', payload),
   remove: (payload) => ipcRenderer.invoke('profiles:remove', payload),
   rename: (payload) => ipcRenderer.invoke('profiles:rename', payload),
   setColor: (payload) => ipcRenderer.invoke('profiles:setColor', payload),

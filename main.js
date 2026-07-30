@@ -87,9 +87,62 @@ function loadProfiles() {
 
 function saveProfiles(profiles) {
   ensureRoot();
+  // Keep the previous version as a backup so a bad write is recoverable
+  try {
+    if (fs.existsSync(PROFILES_JSON)) fs.copyFileSync(PROFILES_JSON, PROFILES_JSON + '.bak');
+  } catch (e) { log('warn', 'facet.json backup failed', e.message); }
   const tmp = PROFILES_JSON + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify({ profiles }, null, 2));
   fs.renameSync(tmp, PROFILES_JSON);
+}
+
+// ============================================================================
+// Orphan detection — folders under profiles/ that no facet.json entry claims
+// ============================================================================
+function listOrphanSlugs() {
+  const dir = path.join(PROFILE_ROOT, 'profiles');
+  if (!fs.existsSync(dir)) return [];
+  const claimed = new Set(loadProfiles().filter(p => !p.adopted).map(p => p.slug));
+  let items;
+  try { items = fs.readdirSync(dir, { withFileTypes: true }); }
+  catch { return []; }
+  return items
+    .filter(d => d.isDirectory() && !claimed.has(d.name))
+    .map(d => {
+      const full = path.join(dir, d.name);
+      let mtime = null, size = 0, hasSession = false;
+      try {
+        mtime = fs.statSync(full).mtime.toISOString();
+        // Session markers: presence of Local Storage or IndexedDB means a real signed-in dir
+        hasSession = fs.existsSync(path.join(full, 'Local Storage')) ||
+                     fs.existsSync(path.join(full, 'IndexedDB'));
+        size = folderSize(full);
+      } catch {}
+      return { slug: d.name, path: full, mtime, size, hasSession };
+    })
+    .sort((a, b) => (b.mtime || '').localeCompare(a.mtime || ''));
+}
+
+function folderSize(root) {
+  let total = 0;
+  const stack = [root];
+  while (stack.length) {
+    const p = stack.pop();
+    let items;
+    try { items = fs.readdirSync(p, { withFileTypes: true }); } catch { continue; }
+    for (const it of items) {
+      const full = path.join(p, it.name);
+      if (it.isDirectory()) stack.push(full);
+      else {
+        try { total += fs.statSync(full).size; } catch {}
+      }
+    }
+  }
+  return total;
+}
+
+function hasAnyAdopted(profiles = loadProfiles()) {
+  return profiles.some(p => p.adopted);
 }
 
 function loadUserSettings() {
@@ -213,7 +266,7 @@ function launchProfile(profile) {
       broadcastRunning();
     });
     broadcastRunning();
-    log('info', 'launched', profile.name, dir);
+    log('info', 'launched', { id: profile.id, name: profile.name, adopted: !!profile.adopted, dir });
     return { ok: true };
   } catch (e) {
     log('error', 'spawn failed', e.message);
@@ -471,6 +524,7 @@ app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
 ipcMain.handle('profiles:list', () => {
   invalidateClaudeExeCache();
   const { effective, locked } = getEffectiveSettings();
+  const orphans = listOrphanSlugs();
   return {
     profiles: loadProfiles(),
     running: Array.from(running),
@@ -481,6 +535,7 @@ ipcMain.handle('profiles:list', () => {
     settings: effective,
     lockedSettings: locked,
     portable: IS_PORTABLE,
+    orphanCount: orphans.length,
   };
 });
 
@@ -518,11 +573,31 @@ ipcMain.handle('settings:pickClaudeExe', async () => {
   return { ok: true, path: picked };
 });
 
-ipcMain.handle('profiles:add', (_e, { name, color, adopted }) => {
+ipcMain.handle('profiles:add', (_e, { name, color, adopted, orphanAction }) => {
   const profiles = loadProfiles();
   const slug = slugify(name);
-  if (profiles.some(p => p.slug === slug && !adopted)) {
-    return { ok: false, error: 'duplicate' };
+  // Guard: no two profiles with the same name
+  if (profiles.some(p => p.slug === slug)) {
+    return { ok: false, error: 'duplicate-name' };
+  }
+  // Guard: at most one adopted profile — otherwise clicking either does the same thing
+  if (adopted && hasAnyAdopted(profiles)) {
+    return { ok: false, error: 'already-adopted' };
+  }
+  // Guard: for a non-adopted (fresh) profile, if the slug's folder already exists on disk,
+  // the caller must tell us what to do — reuse the existing data or wipe it. This is the
+  // exact bug that caused a "wrong Personal" to appear: silent reuse of stale data.
+  if (!adopted) {
+    const dir = path.join(PROFILE_ROOT, 'profiles', slug);
+    if (fs.existsSync(dir)) {
+      if (orphanAction === 'wipe') {
+        try { fs.rmSync(dir, { recursive: true, force: true }); }
+        catch (e) { log('error', 'wipe failed', e.message); return { ok: false, error: 'wipe-failed' }; }
+      } else if (orphanAction !== 'recover') {
+        return { ok: false, error: 'orphan-exists', orphanPath: dir };
+      }
+      // 'recover' falls through and reuses the existing data as-is
+    }
   }
   const profile = {
     id: `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
@@ -533,8 +608,60 @@ ipcMain.handle('profiles:add', (_e, { name, color, adopted }) => {
   };
   profiles.push(profile);
   saveProfiles(profiles);
-  log('info', 'profile added', profile.name);
+  log('info', 'profile added', { id: profile.id, name: profile.name, adopted: profile.adopted });
   return { ok: true, profile };
+});
+
+// Cheap read-only check the UI calls while the user is typing a new profile name
+ipcMain.handle('profiles:preflight', (_e, { name, adopted }) => {
+  const slug = slugify(name || '');
+  if (!slug) return { slug: '', ok: false, reason: 'empty' };
+  const profiles = loadProfiles();
+  if (profiles.some(p => p.slug === slug)) return { slug, ok: false, reason: 'duplicate-name' };
+  if (adopted && hasAnyAdopted(profiles)) return { slug, ok: false, reason: 'already-adopted' };
+  if (!adopted) {
+    const dir = path.join(PROFILE_ROOT, 'profiles', slug);
+    if (fs.existsSync(dir)) {
+      return { slug, ok: true, warn: 'orphan-exists', orphanPath: dir, hasSession:
+        fs.existsSync(path.join(dir, 'Local Storage')) || fs.existsSync(path.join(dir, 'IndexedDB')) };
+    }
+  }
+  return { slug, ok: true };
+});
+
+// Orphan recovery / cleanup — surfaces the folders we found in listOrphanSlugs()
+ipcMain.handle('profiles:listOrphans', () => listOrphanSlugs());
+
+ipcMain.handle('profiles:recoverOrphan', (_e, { slug, name, color }) => {
+  const orphans = listOrphanSlugs();
+  if (!orphans.some(o => o.slug === slug)) return { ok: false, error: 'not-orphan' };
+  const profiles = loadProfiles();
+  if (profiles.some(p => p.slug === slug)) return { ok: false, error: 'slug-taken' };
+  const profile = {
+    id: `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+    name: (name || slug).trim(),
+    slug,
+    color: color || 'indigo',
+    adopted: false,
+    createdAt: new Date().toISOString(),
+    recovered: true,
+  };
+  profiles.push(profile);
+  saveProfiles(profiles);
+  log('info', 'orphan recovered', { id: profile.id, name: profile.name, slug });
+  return { ok: true, profile };
+});
+
+ipcMain.handle('profiles:deleteOrphan', (_e, { slug }) => {
+  const dir = path.join(PROFILE_ROOT, 'profiles', slug);
+  // Safety: refuse to delete anything that a profile currently claims
+  const profiles = loadProfiles();
+  if (profiles.some(p => !p.adopted && p.slug === slug)) return { ok: false, error: 'claimed' };
+  if (!fs.existsSync(dir)) return { ok: false, error: 'not-found' };
+  try { fs.rmSync(dir, { recursive: true, force: true }); }
+  catch (e) { log('error', 'deleteOrphan failed', e.message); return { ok: false, error: e.message }; }
+  log('info', 'orphan deleted', slug);
+  return { ok: true };
 });
 
 ipcMain.handle('profiles:remove', (_e, { id, deleteData }) => {
@@ -548,7 +675,7 @@ ipcMain.handle('profiles:remove', (_e, { id, deleteData }) => {
     if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
   }
   running.delete(id);
-  log('info', 'profile removed', p.name);
+  log('info', 'profile removed', { id, name: p.name, adopted: !!p.adopted, deleteData: !!deleteData });
   return { ok: true };
 });
 
