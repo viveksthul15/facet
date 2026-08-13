@@ -51,6 +51,21 @@ const DEFAULT_SETTINGS = {
 let tray = null;
 let panel = null;
 let currentHotkey = null;
+let dialogSuppressBlur = 0;
+
+// Wrap any main-process dialog that should not cause the panel to hide.
+// Increments a counter (so nested/overlapping dialogs behave), decrements
+// on completion, and refocuses the panel so users see the updated state.
+async function withDialogGuard(fn) {
+  dialogSuppressBlur++;
+  try {
+    return await fn();
+  } finally {
+    dialogSuppressBlur--;
+    // Return focus to the panel so it stays visible instead of quietly hiding
+    setTimeout(() => { if (panel && !panel.isDestroyed()) panel.focus(); }, 60);
+  }
+}
 let isQuitting = false;
 const running = new Set();
 
@@ -378,7 +393,12 @@ function createPanel() {
     },
   });
   panel.loadFile(path.join(__dirname, 'ui', 'panel.html'));
-  panel.on('blur', () => { if (panel && panel.isVisible()) panel.hide(); });
+  panel.on('blur', () => {
+    // Don't auto-hide while a native OS dialog (file picker, confirm) is up —
+    // otherwise focus stealing collapses the panel behind the dialog.
+    if (dialogSuppressBlur > 0) return;
+    if (panel && panel.isVisible()) panel.hide();
+  });
   panel.setMenuBarVisibility(false);
   panel.webContents.setWindowOpenHandler(() => ({ action: 'deny' })); // block window.open
   panel.webContents.on('will-navigate', (e) => e.preventDefault());   // block navigation
@@ -561,16 +581,18 @@ ipcMain.handle('settings:set', (_e, patch) => {
 });
 
 ipcMain.handle('settings:pickClaudeExe', async () => {
-  const r = await dialog.showOpenDialog({
-    title: 'Locate Claude.exe',
-    properties: ['openFile'],
-    filters: [{ name: 'Claude Desktop', extensions: ['exe'] }],
-    defaultPath: process.env.LOCALAPPDATA || undefined,
+  return withDialogGuard(async () => {
+    const r = await dialog.showOpenDialog(panel, {
+      title: 'Locate Claude.exe',
+      properties: ['openFile'],
+      filters: [{ name: 'Claude Desktop', extensions: ['exe'] }],
+      defaultPath: process.env.LOCALAPPDATA || undefined,
+    });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    const picked = r.filePaths[0];
+    if (!fs.existsSync(picked)) return { ok: false, error: 'not-found' };
+    return { ok: true, path: picked };
   });
-  if (r.canceled || !r.filePaths[0]) return { ok: false };
-  const picked = r.filePaths[0];
-  if (!fs.existsSync(picked)) return { ok: false, error: 'not-found' };
-  return { ok: true, path: picked };
 });
 
 ipcMain.handle('profiles:add', (_e, { name, color, adopted, orphanAction }) => {
@@ -764,25 +786,28 @@ ipcMain.handle('profiles:menuAt', (e, { id }) => {
 });
 
 ipcMain.handle('profiles:export', async () => {
-  const r = await dialog.showSaveDialog({
-    title: 'Export Facet profiles',
-    defaultPath: `facet-export-${new Date().toISOString().slice(0, 10)}.json`,
-    filters: [{ name: 'JSON', extensions: ['json'] }],
+  return withDialogGuard(async () => {
+    const r = await dialog.showSaveDialog(panel, {
+      title: 'Export Facet profiles',
+      defaultPath: `facet-export-${new Date().toISOString().slice(0, 10)}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    });
+    if (r.canceled || !r.filePath) return { ok: false };
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      profiles: loadProfiles(),
+      settings: loadUserSettings(),
+    };
+    fs.writeFileSync(r.filePath, JSON.stringify(payload, null, 2));
+    log('info', 'exported', r.filePath);
+    return { ok: true, path: r.filePath };
   });
-  if (r.canceled || !r.filePath) return { ok: false };
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    version: 1,
-    profiles: loadProfiles(),
-    settings: loadUserSettings(),
-  };
-  fs.writeFileSync(r.filePath, JSON.stringify(payload, null, 2));
-  log('info', 'exported', r.filePath);
-  return { ok: true, path: r.filePath };
 });
 
 ipcMain.handle('profiles:import', async (_e, { mode }) => {
-  const r = await dialog.showOpenDialog({
+  return withDialogGuard(async () => {
+  const r = await dialog.showOpenDialog(panel, {
     title: 'Import Facet profiles',
     properties: ['openFile'],
     filters: [{ name: 'JSON', extensions: ['json'] }],
@@ -809,6 +834,7 @@ ipcMain.handle('profiles:import', async (_e, { mode }) => {
   } catch (e) {
     return { ok: false, error: e.message };
   }
+  });
 });
 
 ipcMain.handle('panel:hide', () => { if (panel) panel.hide(); });
