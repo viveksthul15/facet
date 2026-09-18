@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.log
 .DS_Store
+.claude/
+# PowerShell module cache dropped by bench scripts that run with a substitute LOCALAPPDATA
+Microsoft/

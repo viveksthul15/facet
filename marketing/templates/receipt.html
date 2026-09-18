@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facet speed — receipt</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { display: grid; place-items: center; padding: var(--pad); }
+  .paper {
+    width: var(--paperw); background: #f7f4ec; color: #1d1b16; border-radius: 6px;
+    padding: var(--ppad); font-family: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+    font-size: var(--fs); line-height: 1.5; position: relative;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.55), 0 2px 0 #e2ddd0 inset;
+    -webkit-mask: linear-gradient(#000 0 0) padding-box, radial-gradient(circle at 50% 100%, transparent 6px, #000 6.5px) bottom / 24px 12px repeat-x;
+  }
+  .paper::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 12px;
+    background: radial-gradient(circle at 12px 0, transparent 7px, #f7f4ec 7.5px) 0 0 / 24px 12px repeat-x; }
+  .c { text-align: center; }
+  .store { font-weight: 700; font-size: 1.35em; letter-spacing: 3px; }
+  .rule { border-top: 2px dashed #b9b3a3; margin: 0.9em 0; }
+  .line { display: grid; grid-template-columns: 1fr auto auto; gap: 0 1.2em; align-items: baseline; }
+  .line .was { color: #8c8576; text-decoration: line-through; text-decoration-thickness: 2px; }
+  .line .now { color: #15803d; font-weight: 700; min-width: 5.5ch; text-align: right; }
+  .line small { display: block; color: #8c8576; font-size: 0.78em; margin-top: -0.2em; }
+  .hdr { color: #8c8576; font-size: 0.85em; }
+  .total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.25em; }
+  .total .n { color: #15803d; }
+  .stamp-row { text-align: center; margin: 0.5em 0 0.2em; }
+  .stamp {
+    display: inline-block; transform: rotate(-6deg); color: #b91c1c; border: 4px solid #b91c1c;
+    padding: 0.1em 0.6em; font-weight: 900; letter-spacing: 2px; font-size: 1.35em; opacity: 0.8; border-radius: 6px;
+    mix-blend-mode: multiply;
+  }
+  .barcode { height: var(--bch); margin: 0.6em auto 0.2em; width: 78%;
+    background: repeating-linear-gradient(90deg, #1d1b16 0 2px, transparent 2px 4px, #1d1b16 4px 7px, transparent 7px 9px, #1d1b16 9px 10px, transparent 10px 14px); }
+  .tiny { font-size: 0.72em; color: #8c8576; }
+</style>
+<script src="../speed-data.js"></script>
+</head>
+<body>
+<script>
+  const S = window.SPEED;
+  const q = new URLSearchParams(location.search);
+  const [W, H] = (q.get('size') || '1200x630').split('x').map(Number);
+  const tall = H > W, square = W === H;
+  const root = document.documentElement.style;
+  root.setProperty('--w', W + 'px'); root.setProperty('--h', H + 'px');
+  root.setProperty('--pad', tall ? '70px' : square ? '30px' : '14px');
+  root.setProperty('--paperw', tall ? '820px' : square ? '760px' : '640px');
+  root.setProperty('--ppad', tall ? '44px 52px' : square ? '40px 48px' : '18px 36px');
+  root.setProperty('--fs', tall ? '25px' : square ? '23px' : '13.5px');
+  root.setProperty('--bch', tall ? '54px' : '38px');
+  const rows = tall || square ? S.rows : S.rows.slice(0, 4);
+  const wide = !tall && !square; // landscape: tighter — no sub-lines, fewer footer lines
+  const saved = rows.reduce((s, r) => s + (r.old - r.new), 0);
+  const fmt = (ms) => ms >= 1000 ? (ms / 1000).toFixed(1) + ' s' : Math.round(ms) + ' ms';
+  document.body.innerHTML = `
+    <div class="paper">
+      <div class="c store">FACET</div>
+      <div class="c hdr">one identity · many facets · ${S.measuredOn} · ${S.machineShort}</div>
+      <div class="rule"></div>
+      <div class="line hdr"><span>ITEM</span><span>WAS</span><span>NOW</span></div>
+      ${rows.map((r) => `
+        <div class="line"><span>${r.label}${wide ? '' : `<small>${r.sub}</small>`}</span><span class="was">${fmt(r.old)}</span><span class="now">${fmt(r.new)}</span></div>`).join('')}
+      <div class="rule"></div>
+      <div class="total"><span>YOU SAVE</span><span class="n">${fmt(saved)}</span></div>
+      <div class="tiny">per round of those ${rows.length} actions · v${S.oldVersion} → v${S.newVersion}</div>
+      <div class="stamp-row"><span class="stamp">PAID IN MS</span></div>
+      <div class="rule"></div>
+      <div class="c tiny">NO REFUNDS · NO REGRETS · NO TELEMETRY${wide ? ' · every number: bench/results in the repo' : ''}</div>
+      ${wide ? '' : '<div class="c tiny">every number: bench/results in the repo</div>'}
+      <div class="barcode"></div>
+      <div class="c tiny">github.com/viveksthul15/facet</div>
+    </div>`;
+</script>
+</body>
+</html>

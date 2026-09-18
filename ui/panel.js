@@ -6,6 +6,7 @@ const state = {
   running: new Set(),
   claudeExe: null,
   claudeExeSource: null,
+  claudeProbing: false,
   adoptable: false,
   paths: { root: '', claudeData: '' },
   settings: {},
@@ -19,6 +20,10 @@ const state = {
   hotkeyRecording: false,
   confirm: null,
   onboarding: false,
+  sessions: {
+    rows: [], query: '', shown: 60, loading: false, error: '', busy: null, result: null,
+    logs: false, logsProfileId: null, keepLarge: false,
+  },
 };
 
 const COLORS = ['indigo', 'emerald', 'amber', 'rose', 'violet', 'sky'];
@@ -113,7 +118,7 @@ function viewPopulated() {
       el('span', {}, 'Profiles'),
       el('span', { class: 'count' }, String(state.profiles.length)),
     ),
-    !state.claudeExe && el('div', { class: 'error-strip' },
+    !state.claudeExe && !state.claudeProbing && el('div', { class: 'error-strip' },
       el('b', {}, 'Claude Desktop not found. '),
       'Install from claude.ai/download, or ',
       el('a', { href: '#', onclick: (e) => { e.preventDefault(); setView('settings'); },
@@ -182,7 +187,7 @@ function viewEmpty() {
         el('button', { class: 'icon-btn', onclick: () => api.hide() }, ICONS.close()),
       ),
     ),
-    !state.claudeExe && el('div', { class: 'error-strip' },
+    !state.claudeExe && !state.claudeProbing && el('div', { class: 'error-strip' },
       el('b', {}, 'Claude Desktop not found. '),
       'Install from claude.ai/download, or ',
       el('a', { href: '#', onclick: (e) => { e.preventDefault(); setView('settings'); },
@@ -272,7 +277,8 @@ function viewAdd() {
               el('span', { class: 'app-name' }, 'Claude Desktop'),
               el('span', { class: 'app-sub' }, 'Electron · honors --user-data-dir'),
             ),
-            el('span', { class: `app-tag ${claudeOK ? '' : 'warn'}` }, claudeOK ? 'Detected' : 'Not found'),
+            el('span', { class: `app-tag ${claudeOK || state.claudeProbing ? '' : 'warn'}` },
+              claudeOK ? 'Detected' : state.claudeProbing ? 'Checking…' : 'Not found'),
           ),
         ),
       ),
@@ -344,6 +350,11 @@ function viewManage() {
       state.profiles.length === 0 && el('div', {
         style: { padding: '18px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' },
       }, 'No profiles to manage.'),
+    ),
+    el('div', { class: 'divider' }),
+    el('div', { class: 'panel-foot' },
+      el('button', { class: 'foot-btn', onclick: () => setView('sessions') },
+        ICONS.download(), 'Export a session'),
     ),
     el('div', { class: 'warn-strip' },
       el('span', { class: 'warn-icon' }, ICONS.warn()),
@@ -493,7 +504,7 @@ function viewSettings() {
       ),
       renderSettingsSection('About', [
         el('div', { class: 'hint' },
-          el('b', {}, 'Facet 0.1.0'), ' — one identity, many facets.', el('br'),
+          el('b', {}, `Facet ${state.version}`), ' — one identity, many facets.', el('br'),
           'No network. No token handling. Data stays local.',
         ),
       ]),
@@ -529,7 +540,7 @@ function viewRecovery() {
                     : el('span', { class: 'orphan-tag' }, 'empty'),
                 ),
                 el('div', { class: 'orphan-meta' },
-                  `${formatBytes(o.size)}`,
+                  o.size == null ? 'measuring…' : `${formatBytes(o.size)}`,
                   o.mtime && ` · last used ${formatDate(o.mtime)}`,
                 ),
               ),
@@ -556,13 +567,25 @@ function formatDate(iso) {
   try { return new Date(iso).toLocaleString(); } catch { return iso; }
 }
 
+// The list shows at once; each folder's size is filled in as it is measured.
+let orphanLoadSeq = 0;
+async function loadOrphans() {
+  const seq = ++orphanLoadSeq;
+  state.orphans = await api.listOrphans();
+  render();
+  for (const o of state.orphans) {
+    const r = await api.orphanSize({ slug: o.slug });
+    if (seq !== orphanLoadSeq) return; // a newer load took over
+    if (r && r.ok) { o.size = r.size; if (state.view === 'recovery') render(); }
+  }
+}
+
 async function onRecoverOrphan(o) {
   // Default the display name to a titlecased slug — user can rename after
   const name = o.slug.replace(/(^|-)([a-z])/g, (_, s, c) => (s ? ' ' : '') + c.toUpperCase());
   const r = await api.recoverOrphan({ slug: o.slug, name, color: 'indigo' });
   if (r && r.ok) {
-    state.orphans = await api.listOrphans();
-    await refresh(); render();
+    await refresh(); await loadOrphans();
   }
 }
 
@@ -572,8 +595,7 @@ async function onDeleteOrphan(o) {
     onConfirm: async () => {
       await api.deleteOrphan({ slug: o.slug });
       state.confirm = null;
-      state.orphans = await api.listOrphans();
-      await refresh(); render();
+      await refresh(); await loadOrphans();
     },
   };
   render();
@@ -683,6 +705,7 @@ async function refresh() {
   state.running = new Set(data.running);
   state.claudeExe = data.claudeExe;
   state.claudeExeSource = data.claudeExeSource;
+  state.claudeProbing = !!data.claudeExeProbing;
   // Show adopt affordance whenever the real Claude data dir exists AND no profile
   // is already adopted. Was previously gated on profiles.length === 0, which meant
   // you couldn't adopt once you'd created any other profile first.
@@ -691,6 +714,7 @@ async function refresh() {
   state.settings = data.settings || {};
   state.lockedSettings = data.lockedSettings || [];
   state.portable = !!data.portable;
+  state.version = data.version || '';
   state.orphanCount = data.orphanCount || 0;
   // Onboarding: show once if user has never seen it and no profiles yet
   if (state.settings && state.settings.onboardingComplete === false && state.profiles.length === 0) {
@@ -856,9 +880,217 @@ function setView(v) {
   if (v === 'settings' && state.hotkeyRecording) {
     setTimeout(() => document.querySelector('.hotkey-recorder')?.focus(), 40);
   }
-  if (v === 'recovery') {
-    (async () => { state.orphans = await api.listOrphans(); render(); })();
+  if (v === 'recovery') loadOrphans();
+  if (v === 'sessions') {
+    // Default the log source to the adopted profile — it is the one using %APPDATA%\Claude.
+    if (!state.sessions.logsProfileId) {
+      const pick = state.profiles.find(p => p.adopted) || state.profiles[0];
+      state.sessions.logsProfileId = pick ? pick.id : null;
+    }
+    loadSessions(false);
+    setTimeout(() => document.getElementById('ses-q')?.focus(), 40);
   }
+}
+
+// ================= sessions =================
+//
+// Claude Code's /export is gone from the desktop app, and the CLI's copy needs the terminal
+// renderer, so it cannot be reached from here. This lists every session transcript on the
+// machine and hands one to tools/session-export.mjs.
+
+function fmtSize(n) {
+  if (n > 1073741824) return `${(n / 1073741824).toFixed(1)} GB`;
+  if (n > 1048576) return `${(n / 1048576).toFixed(1)} MB`;
+  if (n > 1024) return `${Math.round(n / 1024)} KB`;
+  return `${n} B`;
+}
+
+function fmtWhen(ms) {
+  const d = new Date(ms);
+  const mins = Math.round((Date.now() - ms) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
+  if (mins < 10080) return `${Math.round(mins / 1440)}d ago`;
+  return d.toISOString().slice(0, 10);
+}
+
+// "D--Projects-multi-claude-facet" -> "multi-claude-facet". The slug cannot be turned back into
+// a real path (a genuine dash is indistinguishable from a separator), so this is a label only.
+function shortProject(slug) {
+  const parts = String(slug || '').split('-').filter(Boolean);
+  return parts.slice(-2).join('-') || slug || '?';
+}
+
+function visibleSessions() {
+  const q = state.sessions.query.trim().toLowerCase();
+  const rows = state.sessions.rows;
+  if (!q) return rows;
+  return rows.filter(s =>
+    (s.title || '').toLowerCase().includes(q) ||
+    (s.cwd || '').toLowerCase().includes(q) ||
+    s.project.toLowerCase().includes(q) ||
+    s.id.startsWith(q));
+}
+
+async function loadSessions(force) {
+  if (state.sessions.loading) return;
+  if (state.sessions.rows.length && !force) return;
+  state.sessions.loading = true;
+  state.sessions.error = '';
+  render();
+  const r = await api.listSessions();
+  state.sessions.loading = false;
+  if (r.ok) state.sessions.rows = r.sessions;
+  else state.sessions.error = r.error || 'could not read the session folder';
+  render();
+}
+
+async function onExportSession(s) {
+  if (state.sessions.busy) return;
+  state.sessions.busy = s.id;
+  state.sessions.result = null;
+  state.sessions.error = '';
+  render();
+  const r = await api.exportSession({
+    id: s.id,
+    logsProfileId: state.sessions.logs ? state.sessions.logsProfileId : null,
+    keepLargeTasks: state.sessions.keepLarge,
+  });
+  state.sessions.busy = null;
+  if (r.canceled) { render(); return; }
+  if (r.ok) state.sessions.result = r;
+  else state.sessions.error = r.error || 'export failed';
+  render();
+}
+
+function viewSessions() {
+  const rows = visibleSessions();
+  const res = state.sessions.result;
+  return el('div', { class: 'panel' },
+    el('div', { class: 'panel-head' },
+      el('div', { class: 'panel-title' }, brandMark(), 'Export session'),
+      el('div', { class: 'panel-head-tools' },
+        el('button', { class: 'icon-btn', title: 'Refresh',
+          onclick: () => loadSessions(true) }, ICONS.arrowDown()),
+        el('button', { class: 'icon-btn', title: 'Back',
+          onclick: () => setView('populated') }, ICONS.check()),
+      ),
+    ),
+    el('div', { class: 'panel-eyebrow' },
+      el('span', {}, 'Sessions'),
+      el('span', { class: 'count' }, String(state.sessions.rows.length)),
+    ),
+    el('div', { class: 'ses-search' },
+      el('input', {
+        id: 'ses-q', type: 'text', class: 'inline-rename',
+        placeholder: 'Filter by title, folder or id…',
+        value: state.sessions.query,
+        oninput: (e) => { state.sessions.query = e.target.value; state.sessions.shown = SES_PAGE; renderSessionList(); },
+      }),
+    ),
+    state.sessions.error && el('div', { class: 'error-strip' }, state.sessions.error),
+    res && el('div', { class: 'ses-result' },
+      el('div', { class: 'ses-result-top' },
+        el('b', {}, 'Exported'), ` ${fmtSize(res.bytes)} · ${res.turns} turns`),
+      el('div', { class: 'ses-result-path' }, res.out),
+      el('div', { class: 'ses-result-acts' },
+        el('button', { class: 'foot-btn', onclick: () => api.revealPath(res.out) },
+          ICONS.folder(), 'Show in folder'),
+        el('button', { class: 'foot-btn', onclick: () => { state.sessions.result = null; render(); } },
+          'Dismiss'),
+      ),
+    ),
+    el('div', { class: 'ses-list', onscroll: onSessionListScroll }, ...sessionListKids(rows)),
+    el('div', { class: 'ses-more', hidden: rows.length <= SES_MAX_ROWS }, sessionMoreText(rows)),
+    el('div', { class: 'divider' }),
+    el('div', { class: 'ses-opts' },
+      el('label', { class: 'ses-opt' },
+        el('input', {
+          type: 'checkbox', checked: state.sessions.logs,
+          onchange: (e) => { state.sessions.logs = e.target.checked; render(); },
+        }),
+        'Include app logs from',
+        el('select', {
+          class: 'ses-select', disabled: !state.sessions.logs,
+          onchange: (e) => { state.sessions.logsProfileId = e.target.value; },
+        }, ...state.profiles.map(p => el('option', {
+          value: p.id, selected: p.id === state.sessions.logsProfileId,
+        }, p.name))),
+      ),
+      el('label', { class: 'ses-opt' },
+        el('input', {
+          type: 'checkbox', checked: state.sessions.keepLarge,
+          onchange: (e) => { state.sessions.keepLarge = e.target.checked; },
+        }),
+        'Keep large task payloads',
+      ),
+    ),
+  );
+}
+
+const SES_MAX_ROWS = 200;
+// The panel shows about eight rows at a time, so building all 200 up front — and again on every
+// filter keystroke — was pure cost. A page is built first and the rest appended as you scroll.
+const SES_PAGE = 60;
+
+function sessionListKids(rows) {
+  return [
+    state.sessions.loading && el('div', { class: 'ses-empty' }, 'Reading sessions…'),
+    !state.sessions.loading && rows.length === 0 && el('div', { class: 'ses-empty' },
+      state.sessions.rows.length ? 'Nothing matches that filter.' : 'No sessions found in ~/.claude/projects.'),
+    ...rows.slice(0, Math.min(state.sessions.shown, SES_MAX_ROWS)).map(s => renderSessionRow(s)),
+  ].filter(Boolean);
+}
+
+function onSessionListScroll(e) {
+  const list = e.currentTarget;
+  const want = Math.min(visibleSessions().length, SES_MAX_ROWS);
+  if (state.sessions.shown >= want) return;
+  if (list.scrollTop + list.clientHeight < list.scrollHeight - 240) return;
+  const from = state.sessions.shown;
+  state.sessions.shown = Math.min(want, from + SES_PAGE);
+  for (const s of visibleSessions().slice(from, state.sessions.shown)) list.appendChild(renderSessionRow(s));
+}
+
+const sessionMoreText = (rows) =>
+  rows.length > SES_MAX_ROWS ? `${rows.length - SES_MAX_ROWS} more — narrow the filter.` : '';
+
+// Filter keystrokes land here. A full render() would rebuild the whole panel (and replay its
+// entrance animation) on every key; only the rows and the "N more" line depend on the query.
+function renderSessionList() {
+  const list = document.querySelector('.ses-list');
+  const more = document.querySelector('.ses-more');
+  if (!list || !more) { render(); return; }
+  const rows = visibleSessions();
+  list.replaceChildren(...sessionListKids(rows));
+  list.scrollTop = 0;
+  more.hidden = rows.length <= SES_MAX_ROWS;
+  more.textContent = sessionMoreText(rows);
+  fitPanelHeight();
+}
+
+function renderSessionRow(s) {
+  const busy = state.sessions.busy === s.id;
+  return el('div', { class: 'ses-row' },
+    el('div', { class: 'ses-body' },
+      el('div', { class: 'ses-name' }, s.title || '(untitled)'),
+      el('div', { class: 'ses-meta' },
+        el('span', {}, shortProject(s.project)),
+        el('span', { class: 'ses-sep' }, '·'),
+        el('span', {}, fmtWhen(s.mtime)),
+        el('span', { class: 'ses-sep' }, '·'),
+        el('span', {}, fmtSize(s.size)),
+        s.turns ? el('span', { class: 'ses-sep' }, '·') : null,
+        s.turns ? el('span', {}, `${s.turns} turns`) : null,
+      ),
+    ),
+    el('button', {
+      class: 'ses-btn', disabled: busy || !!state.sessions.busy,
+      title: `Export ${s.id}`,
+      onclick: () => onExportSession(s),
+    }, busy ? 'Exporting…' : 'Export'),
+  );
 }
 
 // stub for exports UX — could route to a toast later
@@ -869,6 +1101,7 @@ function log(msg) { console.log('[facet]', msg); }
 const views = {
   populated: viewPopulated, empty: viewEmpty, add: viewAdd,
   manage: viewManage, settings: viewSettings, recovery: viewRecovery,
+  sessions: viewSessions,
 };
 const root = document.getElementById('root');
 
@@ -898,6 +1131,10 @@ function render() {
       }
     }
   }
+  fitPanelHeight();
+}
+
+function fitPanelHeight() {
   requestAnimationFrame(() => {
     const p = document.querySelector('.panel');
     if (!p) return;

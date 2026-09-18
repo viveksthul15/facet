@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Facet — one identity, many facets</title>
+<meta name="description" content="A tiny Windows tray launcher that opens Claude Desktop on the right account every time. Open source, no telemetry.">
+<meta property="og:image" content="https://raw.githubusercontent.com/viveksthul15/facet/main/marketing/out/race-1200x630.png">
+<style>
+  :root {
+    --bg: #121317; --surface: #1b1d24; --ink: #f4f5f9; --ink-2: #b7bccb; --ink-3: #7d8394;
+    --old: #6e86ff; --new: #16a34a; --amber: #f59e0b; --border: #2b2f3a;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #fbfbfd; --surface: #ffffff; --ink: #14161c; --ink-2: #464b5a; --ink-3: #6b7080; --new: #15803d; --border: #e3e5ec; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; line-height: 1.5; }
+  main { max-width: 960px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-size: clamp(32px, 6vw, 56px); line-height: 1.05; letter-spacing: -0.5px; }
+  h2 { font-size: clamp(24px, 4vw, 34px); letter-spacing: -0.3px; margin-bottom: 8px; }
+  p.lead { color: var(--ink-2); font-size: clamp(16px, 2.2vw, 20px); max-width: 60ch; margin-top: 12px; }
+  .cta { display: inline-block; margin-top: 20px; background: var(--new); color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 700; }
+  .cta.alt { background: transparent; color: var(--ink); border: 1px solid var(--border); margin-left: 8px; }
+  section { margin-top: 64px; }
+  .sub { color: var(--ink-3); margin-bottom: 20px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+  .hero { font-size: clamp(40px, 6vw, 56px); font-weight: 900; letter-spacing: -2px; line-height: 1; color: var(--new); }
+  .hero small { font-size: 0.4em; letter-spacing: 0; font-weight: 700; color: var(--ink-2); margin-left: 4px; }
+  .meaning { margin-top: 8px; color: var(--ink-2); font-size: 15px; }
+  .meaning b { color: var(--ink); }
+  .was { margin-top: 6px; color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .was s { color: var(--old); }
+  .race { margin-top: 22px; width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--border); display: block; }
+  .fine { color: var(--ink-3); font-size: 13px; margin-top: 12px; }
+  .fine a { color: var(--ink-2); }
+  code { font-family: "Cascadia Mono", Consolas, ui-monospace, monospace; background: var(--surface); border: 1px solid var(--border); padding: 1px 5px; border-radius: 5px; font-size: 0.92em; }
+  ul { padding-left: 20px; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main>
+  <h1>One identity.<br>Many facets.</h1>
+  <p class="lead">A tiny Windows tray launcher that opens Claude Desktop on the right account, every time. Work, personal, client — each in its own data directory. Sign in once per profile; sessions stay put.</p>
+  <a class="cta" href="https://github.com/viveksthul15/facet/releases/latest/download/Facet-Setup.exe">Download for Windows</a>
+  <a class="cta alt" href="https://github.com/viveksthul15/facet">Source on GitHub</a>
+
+  <section>
+    <h2>The whole trick</h2>
+    <p class="sub">Claude Desktop is Electron. Point it at a per-profile data directory and each launch gets an independent session.</p>
+    <p><code>Claude.exe --user-data-dir="%LOCALAPPDATA%\Facet\profiles\claude-work"</code></p>
+    <ul style="margin-top:14px">
+      <li>No token handling — Facet only chooses a directory and spawns a process.</li>
+      <li>No network, ever. Zero analytics, zero update checks.</li>
+      <li>Tray only. Alt+1…9 launches a profile; a global hotkey opens the panel.</li>
+    </ul>
+  </section>
+
+  <section id="speed">
+    <h2>Speed</h2>
+    <p class="sub" id="speed-sub">Numbers, not adjectives.</p>
+    <div class="tiles" id="speed-tiles"></div>
+    <img class="race" id="speed-race" alt="Facet: previous version vs this version, timing bars" src="../marketing/out/race-1200x630.png">
+    <p class="fine" id="speed-fine"></p>
+  </section>
+
+  <section>
+    <h2>Honest about what this is</h2>
+    <p class="sub">Unofficial personal-productivity utility. Not affiliated with, endorsed by, or supported by Anthropic. It launches the official Claude Desktop app you already have installed; it does not modify or repackage it. Running multiple accounts may be subject to your plan's terms.</p>
+  </section>
+</main>
+<script src="../marketing/speed-data.js"></script>
+<script>
+  // The Speed section is filled from speed-data.js, which is generated from the benchmark results.
+  const S = window.SPEED;
+  const X = (r) => (r.x >= 2 ? `${r.x >= 10 ? Math.round(r.x) : r.x.toFixed(1)}<small>× faster</small>` : `${Math.round((1 - 1 / r.x) * 100)}<small>% faster</small>`);
+  document.getElementById('speed-sub').textContent = `Facet ${S.oldVersion} → ${S.newVersion}, measured on ${S.machineShort}. Same machine, same data, both versions.`;
+  document.getElementById('speed-tiles').innerHTML = S.rows.slice(0, 6).map((r) => `
+    <div class="tile">
+      <div class="hero">${X(r)}</div>
+      <div class="meaning"><b>${r.label}.</b> ${r.sub}.</div>
+      <div class="was"><s>${r.oldText}</s> → ${r.newText}</div>
+    </div>`).join('');
+  document.getElementById('speed-race').alt = `Facet ${S.oldVersion} vs ${S.newVersion}: timing bars for ${S.rows.slice(0, 4).map((r) => r.label.toLowerCase()).join(', ')}`;
+  document.getElementById('speed-fine').innerHTML = `Medians of 5 runs on the packaged build, ${S.measuredOn}. Memory and install size did not change (Electron's floor). Method, raw JSON and caveats: <a href="https://github.com/viveksthul15/facet/blob/main/BENCHMARKS.md">BENCHMARKS.md</a>.`;
+</script>
+</body>
+</html>

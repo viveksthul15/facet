@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facet speed — numbers</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { padding: var(--pad); display: flex; flex-direction: column; gap: var(--gap); }
+  .kicker { font-size: var(--kicker); font-weight: 800; letter-spacing: -0.5px; line-height: 1.05; }
+  .kicker span { color: var(--ink-3); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: var(--tgap); flex: 1; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--tpad);
+    display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
+  .hero { font-size: var(--hero); font-weight: 900; letter-spacing: -2px; line-height: 0.95; color: var(--new); }
+  .hero small { font-size: 0.42em; letter-spacing: 0; font-weight: 700; margin-left: 0.15em; color: var(--ink-2); }
+  .meaning { font-size: var(--meaning); color: var(--ink-2); line-height: 1.25; margin-top: 10px; }
+  .meaning b { color: var(--ink); font-weight: 700; }
+  .was { font-size: calc(var(--meaning) * 0.82); color: var(--ink-3); margin-top: 8px; }
+  .was s { color: var(--old); text-decoration-color: var(--old); }
+  .foot { font-size: var(--foot); }
+</style>
+<script src="../speed-data.js"></script>
+</head>
+<body>
+<script>
+  const S = window.SPEED;
+  const q = new URLSearchParams(location.search);
+  const [W, H] = (q.get('size') || '1200x630').split('x').map(Number);
+  const tall = H > W, square = W === H;
+  const root = document.documentElement.style;
+  const set = (k, v) => root.setProperty(k, v);
+  set('--w', W + 'px'); set('--h', H + 'px');
+  set('--pad', tall ? '64px' : square ? '56px' : '44px 56px');
+  set('--gap', tall ? '36px' : '22px');
+  set('--kicker', tall ? '54px' : square ? '46px' : '36px');
+  set('--cols', tall ? 2 : square ? 2 : 3);
+  set('--tgap', tall ? '24px' : '18px');
+  set('--tpad', tall ? '30px' : square ? '22px' : '22px');
+  set('--hero', tall ? '96px' : square ? '72px' : '64px');
+  set('--meaning', tall ? '24px' : square ? '19px' : '18px');
+  set('--foot', tall ? '20px' : '16px');
+  const n = 6;
+  const tiles = S.rows.slice(0, n).map((r) => {
+    const x = r.x;
+    const hero = x >= 2 ? `${x >= 10 ? Math.round(x) : x.toFixed(1)}<small>× faster</small>` : `${Math.round((1 - 1 / x) * 100)}<small>% faster</small>`;
+    return `<div class="tile">
+      <div class="hero">${hero}</div>
+      <div>
+        <div class="meaning"><b>${r.label}.</b> ${r.sub}.</div>
+        <div class="was"><s>${r.oldText}</s> → ${r.newText}</div>
+      </div>
+    </div>`;
+  });
+  document.body.innerHTML = `
+    <div class="kicker"><span class="brand"><span class="mark"><i></i><i></i><i></i></span></span> Numbers, <span>not adjectives.</span></div>
+    <div class="grid">${tiles.join('')}</div>
+    <div class="foot">
+      <div>Facet ${S.oldVersion} → ${S.newVersion}. Medians of 5 runs, ${S.machineShort}, packaged build.</div>
+      <div><b>github.com/viveksthul15/facet</b></div>
+    </div>`;
+</script>
+</body>
+</html>

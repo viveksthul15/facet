@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facet speed — race</title>
+<link rel="stylesheet" href="shared.css">
+<script src="../speed-data.js"></script>
+<style>
+  body { padding: var(--pad); display: flex; flex-direction: column; gap: var(--gap); }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .title { font-size: var(--title); font-weight: 800; line-height: 1.05; letter-spacing: -0.5px; white-space: nowrap; }
+  .title em { font-style: normal; color: var(--new); }
+  .badge {
+    background: var(--new); color: #06210f; border-radius: 999px; padding: 0.22em 0.7em;
+    font-size: var(--badge); font-weight: 900; letter-spacing: -1px; line-height: 1; white-space: nowrap;
+    transform: rotate(-4deg); box-shadow: 0 10px 30px rgba(22, 163, 74, 0.35);
+  }
+  .badge small { font-size: 0.42em; font-weight: 700; letter-spacing: 0; margin-left: 0.3em; }
+  .rows { display: flex; flex-direction: column; gap: var(--rowgap); flex: 1; justify-content: space-evenly; }
+  .row { display: grid; grid-template-columns: var(--labelw) 1fr var(--claimw); gap: 18px; align-items: center; }
+  .label { font-size: var(--label); font-weight: 600; line-height: 1.15; }
+  .label small { display: block; color: var(--ink-3); font-weight: 400; font-size: 0.72em; margin-top: 3px; }
+  .lanes { display: flex; flex-direction: column; gap: 6px; }
+  .lane { display: flex; align-items: center; gap: 10px; height: var(--barh); }
+  .bar { height: 100%; border-radius: 4px; min-width: 6px; }
+  .old .bar { background: var(--old); }
+  .new .bar { background: var(--new); }
+  .val { font-size: calc(var(--label) * 0.86); color: var(--ink-2); white-space: nowrap; }
+  .claim { text-align: right; font-size: var(--claim); font-weight: 800; color: var(--new); white-space: nowrap; letter-spacing: -0.5px; }
+  .claim.same { color: var(--ink-3); font-weight: 600; }
+  .foot { font-size: var(--foot); }
+</style>
+</head>
+<body>
+<script>
+  const S = window.SPEED;
+  const q = new URLSearchParams(location.search);
+  const [W, H] = (q.get('size') || '1200x630').split('x').map(Number);
+  const tall = H > W, square = W === H;
+  const root = document.documentElement.style;
+  const set = (k, v) => root.setProperty(k, v);
+  set('--w', W + 'px'); set('--h', H + 'px');
+  set('--pad', tall ? '64px' : square ? '56px' : '48px 56px');
+  set('--gap', tall ? '44px' : square ? '24px' : '10px');
+  set('--title', tall ? '58px' : square ? '50px' : '34px');
+  set('--badge', tall ? '84px' : square ? '70px' : '48px');
+  set('--label', tall ? '28px' : square ? '25px' : '19px');
+  set('--claim', tall ? '40px' : square ? '34px' : '28px');
+  set('--barh', tall ? '22px' : square ? '18px' : '12px');
+  set('--rowgap', tall ? '40px' : square ? '30px' : '6px');
+  set('--labelw', tall ? '300px' : square ? '280px' : '290px');
+  set('--claimw', tall ? '230px' : square ? '210px' : '190px');
+  set('--foot', tall ? '20px' : '16px');
+
+  const rows = tall ? S.rows.slice(0, 5) : square ? S.rows.slice(0, 4) : S.rows.slice(0, 4);
+  const best = rows.reduce((m, r) => (r.x > m.x ? r : m), rows[0]);
+  const maxOld = Math.max(...rows.map((r) => r.old));
+  document.body.innerHTML = `
+    <div class="head">
+      <div>
+        <div class="brand"><span class="mark"><i></i><i></i><i></i></span>Facet ${S.newVersion}</div>
+        <div class="title" style="margin-top:14px">Same laptop.<br>Same data.<br><em>Just faster.</em></div>
+      </div>
+      <div class="badge"><small style="margin:0 .25em 0 0">up to</small>${best.x >= 10 ? Math.round(best.x) : best.x.toFixed(1)}×<small>faster</small></div>
+    </div>
+    <div class="rows">
+      ${rows.map((r) => `
+        <div class="row">
+          <div class="label">${r.label}<small>${r.sub}</small></div>
+          <div class="lanes">
+            <div class="lane old"><div class="bar" style="width:${(100 * r.old / maxOld).toFixed(1)}%"></div><span class="val mono">${r.oldText}</span></div>
+            <div class="lane new"><div class="bar" style="width:${Math.max(0.8, 100 * r.new / maxOld).toFixed(1)}%"></div><span class="val mono">${r.newText}</span></div>
+          </div>
+          <div class="claim ${r.x < 1.05 ? 'same' : ''}">${r.claim.replace(' faster', '')}</div>
+        </div>`).join('')}
+    </div>
+    <div class="foot">
+      <div class="legend"><span class="l-old">${S.oldVersion}</span><span class="l-new">${S.newVersion}</span></div>
+      <div>Medians, ${S.machineShort}, ${S.measuredOn} · <b>github.com/viveksthul15/facet</b></div>
+    </div>`;
+</script>
+</body>
+</html>

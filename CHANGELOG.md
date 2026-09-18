@@ -1,0 +1,58 @@
+# Changelog
+
+## 0.2.0 — 2026-09-18
+
+The speed release. Same features, same memory, a lot less waiting. Every number below is a
+median of 5 runs on a Ryzen 5 laptop, packaged build, same data for both versions — see
+[BENCHMARKS.md](BENCHMARKS.md) and `bench/results/`.
+
+| | 0.1.2 | 0.2.0 |
+|---|---:|---:|
+| Every panel action, Claude from the Microsoft Store | 1.9 s | 8 ms |
+| Every panel action, 25 profiles + 3 old data folders | 8.6 s | 6 ms |
+| Start → profiles on screen, 25 profiles | 9.4 s | 692 ms |
+| Open the session list, 215 transcripts | 1.4 s | 370 ms |
+| Filter the session list, per keystroke | 79 ms | 8 ms |
+| Export a 50 MB session to zip | 20 s | 5.6 s |
+
+### Fixed
+- **Store installs of Claude froze the panel for ~2 s on every click.** The Microsoft Store
+  (MSIX) lookup ran through PowerShell on every refresh. It now runs once, in the background,
+  and the answer is remembered on disk for as long as that Claude.exe exists.
+- **Leftover data folders made every click slow.** Each refresh walked every file in every
+  unlinked `profiles\` folder to compute a size the panel never showed. Refresh now only counts
+  them; the Recovery view measures each folder on its own, without blocking, and shows
+  "measuring…" until it has the number.
+- **Session export shelled out to `Compress-Archive`** (over 90% of export time) after copying
+  everything into a staging folder. The zip is now written in-process, straight from the source
+  files, with big files deflated in parallel; the transcript is compressed once and stored under
+  both names. Archives are byte-identical to 0.1.2 (checked on 3,000 random transcripts and 30
+  full exports, extracted with Windows' own extractor). Zip64 is supported, so archives over 4 GB
+  no longer fail.
+- **Session list re-read every transcript on every open.** Results are cached by path, size and
+  modification time; uncached transcripts are scanned by byte range and only the lines that can
+  matter are parsed. Transcripts over 512 MB no longer crash the export tool.
+- **Typing in the session filter rebuilt the whole panel** (and replayed its entrance animation)
+  on every key. Only the rows are re-rendered now; 60 at a time, more as you scroll.
+- The export tool no longer crashes on a transcript line that is bare JSON `null`.
+- Settings → About showed "0.1.0" regardless of the installed version.
+
+### Added
+- **Export a Claude Code session** to the same zip layout the removed `/export` command wrote:
+  tray → *Export a session…*. Lists every transcript under `~/.claude/projects`, writes
+  subagents, tool results, workflows, optional app logs, plus a readable Markdown transcript.
+  (Work started in 0.1.2, which was never released.)
+- `bench/`: a reproducible benchmark suite that drives the packaged app over the DevTools
+  protocol on generated data. `BENCHMARKS.md` documents the method and caveats.
+
+### Unchanged
+- Memory (~335 MB working set idle, 4 processes) and installer size (76 MB). That is Electron's
+  floor, not something this release could move.
+
+## 0.1.1 — 2026-08-13
+- Preflight checks when naming a profile, orphan-folder recovery, focus preservation across
+  re-renders, automatic backup of `facet.json`.
+- Panel stays visible while native dialogs are open.
+
+## 0.1.0 — 2026-07-15
+- Initial release.

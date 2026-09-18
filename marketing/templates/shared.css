@@ -1,0 +1,34 @@
+/* Shared look for the speed graphics. Sizes come from ?size=WxH on the page URL (render.js). */
+:root {
+  --bg: #121317;
+  --surface: #1b1d24;
+  --ink: #f4f5f9;
+  --ink-2: #b7bccb;
+  --ink-3: #7d8394;
+  --old: #6e86ff;      /* previous version */
+  --new: #16a34a;      /* this version */
+  --amber: #f59e0b;
+  --border: #2b2f3a;
+  --radius: 22px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); }
+body {
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+  width: var(--w); height: var(--h); overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: "Cascadia Mono", "Consolas", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: 0.2px; }
+.brand .mark { display: inline-flex; align-items: flex-end; gap: 3px; height: 22px; }
+.brand .mark i { display: block; width: 5px; border-radius: 2px; }
+.brand .mark i:nth-child(1) { height: 16px; background: var(--old); }
+.brand .mark i:nth-child(2) { height: 22px; background: var(--new); }
+.brand .mark i:nth-child(3) { height: 12px; background: var(--amber); }
+.muted { color: var(--ink-3); }
+.legend { display: flex; gap: 22px; align-items: center; color: var(--ink-2); }
+.legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+.legend .l-old::before { background: var(--old); }
+.legend .l-new::before { background: var(--new); }
+.foot { color: var(--ink-3); display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
+.foot b { color: var(--ink-2); font-weight: 600; }

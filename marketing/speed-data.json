@@ -1,0 +1,127 @@
+{
+  "oldVersion": "0.1.2",
+  "newVersion": "0.2.0",
+  "machine": "AMD Ryzen 5 7530U laptop, 14.8 GB RAM, NVMe SSD, Microsoft Windows 11",
+  "machineShort": "a Ryzen 5 laptop",
+  "measuredOn": "2026-09-18",
+  "method": "medians of 5 runs on the packaged build, same machine and data for both versions",
+  "power": {
+    "old": "AC",
+    "new": "AC"
+  },
+  "headline": {
+    "key": "export",
+    "label": "Export a 50 MB session to zip",
+    "sub": "298 turns, subagents + tool results",
+    "old": 20353,
+    "new": 5635.1,
+    "path": "suites.export[\"50MB\"].exportMs.median",
+    "x": 3.6118258770917993,
+    "oldText": "20 s",
+    "newText": "5.6 s",
+    "claim": "3.6× faster"
+  },
+  "rows": [
+    {
+      "key": "click",
+      "label": "Every click in the panel",
+      "sub": "Claude Desktop from the Microsoft Store, 3 profiles",
+      "old": 1930.5,
+      "new": 7.7,
+      "path": "suites.actions[\"typical/detect\"].listIpcMs.median",
+      "x": 250.71428571428572,
+      "oldText": "1.9 s",
+      "newText": "8 ms",
+      "claim": "251× faster"
+    },
+    {
+      "key": "cold",
+      "label": "Start → profiles on screen",
+      "sub": "25 profiles, 3 old data folders",
+      "old": 9373.3,
+      "new": 692,
+      "path": "suites.cold[\"large/stub\"].firstContentMs.median",
+      "x": 13.545231213872832,
+      "oldText": "9.4 s",
+      "newText": "692 ms",
+      "claim": "14× faster"
+    },
+    {
+      "key": "export",
+      "label": "Export a 50 MB session to zip",
+      "sub": "298 turns, subagents + tool results",
+      "old": 20353,
+      "new": 5635.1,
+      "path": "suites.export[\"50MB\"].exportMs.median",
+      "x": 3.6118258770917993,
+      "oldText": "20 s",
+      "newText": "5.6 s",
+      "claim": "3.6× faster"
+    },
+    {
+      "key": "list",
+      "label": "Open the session list",
+      "sub": "215 transcripts, 735 MB",
+      "old": 1449.6,
+      "new": 370.1,
+      "path": "suites.sessions.large.openSessionsViewMs.median",
+      "x": 3.916779248851661,
+      "oldText": "1.4 s",
+      "newText": "370 ms",
+      "claim": "3.9× faster"
+    },
+    {
+      "key": "filter",
+      "label": "Filter the list, per keystroke",
+      "sub": "215 sessions",
+      "old": 78.5,
+      "new": 7.8,
+      "path": "suites.sessions.large.filterKeystrokeMs.median",
+      "x": 10.064102564102564,
+      "oldText": "79 ms",
+      "newText": "8 ms",
+      "claim": "10× faster"
+    },
+    {
+      "key": "rename",
+      "label": "Rename a profile",
+      "sub": "Store install, 3 profiles (two renames)",
+      "old": 3797.5,
+      "new": 37.6,
+      "path": "suites.actions[\"typical/detect\"].renameMs.median",
+      "x": 100.99734042553192,
+      "oldText": "3.8 s",
+      "newText": "38 ms",
+      "claim": "101× faster"
+    }
+  ],
+  "classicClick": {
+    "old": 220.1,
+    "new": 4.9
+  },
+  "footprint": {
+    "idleMemoryMB": {
+      "old": 340.3,
+      "new": 333.2
+    },
+    "installerMB": {
+      "old": 76.35,
+      "new": 76.36
+    },
+    "idleCpuPct": {
+      "old": 0.1,
+      "new": 0.11
+    }
+  },
+  "slower": [
+    {
+      "path": "suites.actions.xl/stub.openManageMs",
+      "old": 168.1,
+      "new": 249.5
+    }
+  ],
+  "sources": {
+    "old": "bench/results/results-0.1.2.json",
+    "new": "bench/results/results-0.2.0.json"
+  }
+}

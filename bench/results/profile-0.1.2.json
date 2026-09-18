@@ -1,0 +1,469 @@
+{
+  "label": "0.1.2",
+  "at": "2026-09-17T15:05:49.536Z",
+  "mainProcess_profilesList_largeTier": {
+    "totalMs": 3876.2,
+    "topFunctions": [
+      {
+        "where": "stat (native):0",
+        "ms": 3421.9,
+        "pct": 88.3
+      },
+      {
+        "where": "(idle) (native):0",
+        "ms": 63.3,
+        "pct": 1.6
+      },
+      {
+        "where": "splitPath node_init:2",
+        "ms": 60,
+        "pct": 1.5
+      },
+      {
+        "where": "(anonymous) main.js:126",
+        "ms": 58.8,
+        "pct": 1.5
+      },
+      {
+        "where": "(program) (native):0",
+        "ms": 45.8,
+        "pct": 1.2
+      },
+      {
+        "where": "resolve node:path:190",
+        "ms": 32.1,
+        "pct": 0.8
+      },
+      {
+        "where": "readdir (native):0",
+        "ms": 31.5,
+        "pct": 0.8
+      },
+      {
+        "where": "dateFromMs utils:444",
+        "ms": 28.6,
+        "pct": 0.7
+      },
+      {
+        "where": "toNamespacedPath node:path:686",
+        "ms": 27,
+        "pct": 0.7
+      },
+      {
+        "where": "normalize node:path:336",
+        "ms": 25.2,
+        "pct": 0.6
+      },
+      {
+        "where": "t.statSync node_init:2",
+        "ms": 17.1,
+        "pct": 0.4
+      },
+      {
+        "where": "(garbage collector) (native):0",
+        "ms": 16.7,
+        "pct": 0.4
+      }
+    ],
+    "topLines": [
+      {
+        "where": "node_init:2",
+        "ms": 71.6,
+        "pct": 1.8
+      },
+      {
+        "where": "main.js:134",
+        "ms": 58.8,
+        "pct": 1.5
+      },
+      {
+        "where": "utils:446",
+        "ms": 34,
+        "pct": 0.9
+      },
+      {
+        "where": "node:path:86",
+        "ms": 32.6,
+        "pct": 0.8
+      },
+      {
+        "where": "node:path:691",
+        "ms": 18,
+        "pct": 0.5
+      },
+      {
+        "where": "node:path:696",
+        "ms": 8.2,
+        "pct": 0.2
+      },
+      {
+        "where": "node:fs:1666",
+        "ms": 7.4,
+        "pct": 0.2
+      }
+    ]
+  },
+  "renderer_filterKeystroke_largeStore": {
+    "totalMs": 1246.1,
+    "topFunctions": [
+      {
+        "where": "(anonymous) (native):1",
+        "ms": 967.2,
+        "pct": 77.6
+      },
+      {
+        "where": "(program) (native):0",
+        "ms": 96.2,
+        "pct": 7.7
+      },
+      {
+        "where": "el panel.js:31",
+        "ms": 38,
+        "pct": 3
+      },
+      {
+        "where": "(anonymous) panel.js:1085",
+        "ms": 25.9,
+        "pct": 2.1
+      },
+      {
+        "where": "render panel.js:1059",
+        "ms": 25.8,
+        "pct": 2.1
+      },
+      {
+        "where": "appendChild (native):0",
+        "ms": 20.4,
+        "pct": 1.6
+      },
+      {
+        "where": "(garbage collector) (native):0",
+        "ms": 17.9,
+        "pct": 1.4
+      },
+      {
+        "where": "createElement (native):0",
+        "ms": 12.7,
+        "pct": 1
+      },
+      {
+        "where": "createTextNode (native):0",
+        "ms": 10,
+        "pct": 0.8
+      },
+      {
+        "where": "renderSessionRow panel.js:1024",
+        "ms": 7.9,
+        "pct": 0.6
+      },
+      {
+        "where": "fmtWhen panel.js:895",
+        "ms": 7.6,
+        "pct": 0.6
+      },
+      {
+        "where": "setAttribute (native):0",
+        "ms": 5.5,
+        "pct": 0.4
+      }
+    ],
+    "topLines": [
+      {
+        "where": "panel.js:1094",
+        "ms": 25.2,
+        "pct": 2
+      },
+      {
+        "where": "panel.js:1069",
+        "ms": 25.2,
+        "pct": 2
+      },
+      {
+        "where": "panel.js:31",
+        "ms": 12.4,
+        "pct": 1
+      },
+      {
+        "where": "panel.js:46",
+        "ms": 9.5,
+        "pct": 0.8
+      },
+      {
+        "where": "panel.js:33",
+        "ms": 7.3,
+        "pct": 0.6
+      },
+      {
+        "where": "panel.js:1024",
+        "ms": 7.2,
+        "pct": 0.6
+      },
+      {
+        "where": "panel.js:895",
+        "ms": 6.2,
+        "pct": 0.5
+      },
+      {
+        "where": "panel.js:48",
+        "ms": 3.6,
+        "pct": 0.3
+      }
+    ]
+  },
+  "tool_list_largeStore": {
+    "wallMs": 1768,
+    "totalMs": 1631.5,
+    "topFunctions": [
+      {
+        "where": "eat session-export.mjs:192",
+        "ms": 476.8,
+        "pct": 29.2
+      },
+      {
+        "where": "slice node:buffer:633",
+        "ms": 294.2,
+        "pct": 18
+      },
+      {
+        "where": "readFileSync node:fs:441",
+        "ms": 218.3,
+        "pct": 13.4
+      },
+      {
+        "where": "readMeta session-export.mjs:118",
+        "ms": 176,
+        "pct": 10.8
+      },
+      {
+        "where": "compileForInternalLoader realm:383",
+        "ms": 109.7,
+        "pct": 6.7
+      },
+      {
+        "where": "(garbage collector) (native):0",
+        "ms": 80.5,
+        "pct": 4.9
+      },
+      {
+        "where": "readSync node:fs:708",
+        "ms": 66.7,
+        "pct": 4.1
+      },
+      {
+        "where": "statSync node:fs:1664",
+        "ms": 33.6,
+        "pct": 2.1
+      },
+      {
+        "where": "openSync node:fs:570",
+        "ms": 21.8,
+        "pct": 1.3
+      },
+      {
+        "where": "readdirSync node:fs:1495",
+        "ms": 14.8,
+        "pct": 0.9
+      },
+      {
+        "where": "(program) (native):0",
+        "ms": 11.1,
+        "pct": 0.7
+      },
+      {
+        "where": "(anonymous) session-export.mjs:1",
+        "ms": 9.1,
+        "pct": 0.6
+      }
+    ],
+    "topLines": [
+      {
+        "where": "session-export.mjs:192",
+        "ms": 409.2,
+        "pct": 25.1
+      },
+      {
+        "where": "node:buffer:633",
+        "ms": 294.2,
+        "pct": 18
+      },
+      {
+        "where": "node:fs:448",
+        "ms": 216.9,
+        "pct": 13.3
+      },
+      {
+        "where": "session-export.mjs:118",
+        "ms": 139.4,
+        "pct": 8.5
+      },
+      {
+        "where": "realm:395",
+        "ms": 107.5,
+        "pct": 6.6
+      },
+      {
+        "where": "node:fs:750",
+        "ms": 66.7,
+        "pct": 4.1
+      },
+      {
+        "where": "session-export.mjs:199",
+        "ms": 47.9,
+        "pct": 2.9
+      },
+      {
+        "where": "node:fs:1666",
+        "ms": 30.8,
+        "pct": 1.9
+      },
+      {
+        "where": "session-export.mjs:137",
+        "ms": 24.4,
+        "pct": 1.5
+      },
+      {
+        "where": "node:fs:573",
+        "ms": 20.5,
+        "pct": 1.3
+      },
+      {
+        "where": "session-export.mjs:193",
+        "ms": 18.9,
+        "pct": 1.2
+      },
+      {
+        "where": "session-export.mjs:133",
+        "ms": 10.8,
+        "pct": 0.7
+      }
+    ]
+  },
+  "tool_export_50MB": {
+    "wallMs": 23217,
+    "totalMs": 23045.2,
+    "topFunctions": [
+      {
+        "where": "spawnSync child_process:1108",
+        "ms": 21139.6,
+        "pct": 91.7
+      },
+      {
+        "where": "readFileSync node:fs:441",
+        "ms": 542.6,
+        "pct": 2.4
+      },
+      {
+        "where": "readable session-export.mjs:213",
+        "ms": 348.8,
+        "pct": 1.5
+      },
+      {
+        "where": "readMeta session-export.mjs:118",
+        "ms": 305.3,
+        "pct": 1.3
+      },
+      {
+        "where": "copyFileSync node:fs:3030",
+        "ms": 168.7,
+        "pct": 0.7
+      },
+      {
+        "where": "compileForInternalLoader realm:383",
+        "ms": 106.5,
+        "pct": 0.5
+      },
+      {
+        "where": "(garbage collector) (native):0",
+        "ms": 71.5,
+        "pct": 0.3
+      },
+      {
+        "where": "cut session-export.mjs:218",
+        "ms": 60,
+        "pct": 0.3
+      },
+      {
+        "where": "writeFileSync node:fs:2347",
+        "ms": 51.7,
+        "pct": 0.2
+      },
+      {
+        "where": "unlinkSync node:fs:1883",
+        "ms": 40.6,
+        "pct": 0.2
+      },
+      {
+        "where": "end session-export.mjs:217",
+        "ms": 27.2,
+        "pct": 0.1
+      },
+      {
+        "where": "statSync node:fs:1664",
+        "ms": 16.6,
+        "pct": 0.1
+      }
+    ],
+    "topLines": [
+      {
+        "where": "child_process:1109",
+        "ms": 21139.6,
+        "pct": 91.7
+      },
+      {
+        "where": "node:fs:448",
+        "ms": 542.6,
+        "pct": 2.4
+      },
+      {
+        "where": "session-export.mjs:137",
+        "ms": 220.3,
+        "pct": 1
+      },
+      {
+        "where": "session-export.mjs:230",
+        "ms": 184.9,
+        "pct": 0.8
+      },
+      {
+        "where": "node:fs:3036",
+        "ms": 136.2,
+        "pct": 0.6
+      },
+      {
+        "where": "realm:395",
+        "ms": 106.5,
+        "pct": 0.5
+      },
+      {
+        "where": "session-export.mjs:133",
+        "ms": 74.6,
+        "pct": 0.3
+      },
+      {
+        "where": "session-export.mjs:226",
+        "ms": 73.4,
+        "pct": 0.3
+      },
+      {
+        "where": "session-export.mjs:213",
+        "ms": 72.1,
+        "pct": 0.3
+      },
+      {
+        "where": "node:fs:2370",
+        "ms": 51,
+        "pct": 0.2
+      },
+      {
+        "where": "node:fs:1885",
+        "ms": 40.6,
+        "pct": 0.2
+      },
+      {
+        "where": "session-export.mjs:220",
+        "ms": 37,
+        "pct": 0.2
+      }
+    ]
+  }
+}

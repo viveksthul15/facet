@@ -1,0 +1,1279 @@
+{
+  "label": "0.1.2",
+  "suites": {
+    "sizes": {
+      "installerMB": 76.35,
+      "portableMB": 76.16,
+      "installedMB": 264.95,
+      "appAsarKB": 163.5,
+      "__ranAt": "2026-09-18T03:03:16.414Z"
+    },
+    "cold": {
+      "small/stub": {
+        "firstContentMs": {
+          "median": 759.3,
+          "min": 714.5,
+          "max": 998.3,
+          "runs": [
+            998.3,
+            759.3,
+            772,
+            714.5,
+            722.7
+          ]
+        },
+        "mainReadyMs": {
+          "median": 380,
+          "min": 338,
+          "max": 460,
+          "runs": [
+            460,
+            383,
+            380,
+            344,
+            338
+          ]
+        },
+        "rendererNavStartMs": {
+          "median": 492.5,
+          "min": 443.4,
+          "max": 617.5,
+          "runs": [
+            617.5,
+            493.4,
+            492.5,
+            443.4,
+            447.1
+          ]
+        }
+      },
+      "typical/stub": {
+        "firstContentMs": {
+          "median": 984.2,
+          "min": 936.9,
+          "max": 1232.3,
+          "runs": [
+            1232.3,
+            984.2,
+            961.8,
+            985,
+            936.9
+          ]
+        },
+        "mainReadyMs": {
+          "median": 356,
+          "min": 343,
+          "max": 357,
+          "runs": [
+            343,
+            356,
+            356,
+            357,
+            347
+          ]
+        },
+        "rendererNavStartMs": {
+          "median": 464.7,
+          "min": 450.9,
+          "max": 478.6,
+          "runs": [
+            451.3,
+            464.7,
+            467.8,
+            478.6,
+            450.9
+          ]
+        }
+      },
+      "large/stub": {
+        "firstContentMs": {
+          "median": 9373.3,
+          "min": 9284.8,
+          "max": 10169.7,
+          "runs": [
+            9304.3,
+            10169.7,
+            9284.8,
+            9633.5,
+            9373.3
+          ]
+        },
+        "mainReadyMs": {
+          "median": 343,
+          "min": 331,
+          "max": 359,
+          "runs": [
+            331,
+            343,
+            357,
+            341,
+            359
+          ]
+        },
+        "rendererNavStartMs": {
+          "median": 451.5,
+          "min": 434.5,
+          "max": 492.2,
+          "runs": [
+            434.5,
+            447,
+            460.2,
+            451.5,
+            492.2
+          ]
+        }
+      },
+      "xl/stub": {
+        "firstContentMs": {
+          "median": 44034.7,
+          "min": 43710.6,
+          "max": 44574.9,
+          "runs": [
+            44034.7,
+            44014.5,
+            44574.9,
+            44392.2,
+            43710.6
+          ]
+        },
+        "mainReadyMs": {
+          "median": 345,
+          "min": 331,
+          "max": 363,
+          "runs": [
+            352,
+            363,
+            345,
+            331,
+            342
+          ]
+        },
+        "rendererNavStartMs": {
+          "median": 449.5,
+          "min": 436.4,
+          "max": 468.3,
+          "runs": [
+            459,
+            468.3,
+            449.5,
+            436.4,
+            444.9
+          ]
+        }
+      },
+      "typical/detect": {
+        "firstContentMs": {
+          "median": 2712.1,
+          "min": 2585.3,
+          "max": 3018.9,
+          "runs": [
+            2712.1,
+            2585.3,
+            3018.9,
+            2762.8,
+            2671.9
+          ]
+        },
+        "mainReadyMs": {
+          "median": 353,
+          "min": 331,
+          "max": 373,
+          "runs": [
+            373,
+            331,
+            355,
+            338,
+            353
+          ]
+        },
+        "rendererNavStartMs": {
+          "median": 451.4,
+          "min": 433.7,
+          "max": 497.4,
+          "runs": [
+            497.4,
+            433.7,
+            467.4,
+            438.7,
+            451.4
+          ]
+        }
+      },
+      "__ranAt": "2026-09-18T03:09:58.116Z"
+    },
+    "actions": {
+      "small/stub": {
+        "listIpcMs": {
+          "median": 7.6,
+          "min": 6.9,
+          "max": 71.2,
+          "runs": [
+            7.5,
+            7.5,
+            6.9,
+            71.2,
+            8.2,
+            7.7,
+            7.7,
+            6.9,
+            7.8,
+            7.6
+          ]
+        },
+        "refreshAndRenderMs": {
+          "median": 10.7,
+          "min": 8.7,
+          "max": 14.1,
+          "runs": [
+            9.5,
+            10.8,
+            12.8,
+            8.7,
+            9.7,
+            14.1,
+            11.9,
+            13.3,
+            9.1,
+            10.5
+          ]
+        },
+        "renderProfilesMs": {
+          "median": 2.7,
+          "min": 2.4,
+          "max": 3.8,
+          "runs": [
+            3.8,
+            2.6,
+            2.4,
+            2.4,
+            2.4,
+            2.9,
+            2.9,
+            2.8,
+            2.7,
+            2.6
+          ]
+        },
+        "openManageMs": {
+          "median": 3.4,
+          "min": 2.5,
+          "max": 21,
+          "runs": [
+            21,
+            2.5,
+            3.9,
+            2.6,
+            3.7,
+            3.5,
+            2.5,
+            2.8,
+            5.5,
+            3.3
+          ]
+        },
+        "openSettingsMs": {
+          "median": 4.1,
+          "min": 3.2,
+          "max": 29.4,
+          "runs": [
+            29.4,
+            5.6,
+            3.5,
+            4.2,
+            3.6,
+            3.3,
+            4.1,
+            3.2,
+            4,
+            5.3
+          ]
+        },
+        "renameMs": {
+          "median": 33.2,
+          "min": 29.7,
+          "max": 101.6,
+          "runs": [
+            41,
+            101.6,
+            33.2,
+            30.6,
+            29.7
+          ],
+          "note": "two renames per run"
+        },
+        "preflightKeystrokeMs": {
+          "median": 1.5,
+          "min": 1.2,
+          "max": 4.9,
+          "runs": [
+            4.9,
+            1.9,
+            1.4,
+            1.3,
+            1.2,
+            1.4,
+            1.7,
+            1.7,
+            1.8,
+            1.4
+          ]
+        },
+        "listOrphansMs": {
+          "median": 1.8,
+          "min": 1.6,
+          "max": 2.3,
+          "runs": [
+            2,
+            1.8,
+            1.8,
+            2.3,
+            1.8,
+            1.6,
+            1.8,
+            2.1,
+            1.8,
+            1.6
+          ]
+        }
+      },
+      "typical/stub": {
+        "listIpcMs": {
+          "median": 220.1,
+          "min": 212,
+          "max": 248.5,
+          "runs": [
+            239.4,
+            248.5,
+            223.3,
+            219.7,
+            220.5,
+            212,
+            214.7,
+            212.9,
+            222.4,
+            217.9
+          ]
+        },
+        "refreshAndRenderMs": {
+          "median": 231.9,
+          "min": 217.7,
+          "max": 307.6,
+          "runs": [
+            217.7,
+            219.2,
+            227.5,
+            237.3,
+            223.3,
+            236.3,
+            236.4,
+            224.2,
+            268.1,
+            307.6
+          ]
+        },
+        "renderProfilesMs": {
+          "median": 3.8,
+          "min": 3.3,
+          "max": 5,
+          "runs": [
+            5,
+            3.5,
+            4.7,
+            3.4,
+            3.7,
+            3.9,
+            5,
+            4.9,
+            3.8,
+            3.3
+          ]
+        },
+        "openManageMs": {
+          "median": 6.7,
+          "min": 4.2,
+          "max": 26.7,
+          "runs": [
+            26.7,
+            8.4,
+            9.4,
+            7.3,
+            7.6,
+            6.1,
+            5.6,
+            5.1,
+            5.6,
+            4.2
+          ]
+        },
+        "openSettingsMs": {
+          "median": 4.5,
+          "min": 3.4,
+          "max": 36,
+          "runs": [
+            36,
+            4.4,
+            4.6,
+            4.6,
+            4.2,
+            3.5,
+            4.8,
+            4.9,
+            3.4,
+            4.3
+          ]
+        },
+        "reorderMs": {
+          "median": 494.5,
+          "min": 451.2,
+          "max": 672.5,
+          "runs": [
+            521.7,
+            672.5,
+            463.6,
+            494.5,
+            451.2
+          ],
+          "note": "two moves (down + up) per run"
+        },
+        "renameMs": {
+          "median": 446.7,
+          "min": 434.5,
+          "max": 453.7,
+          "runs": [
+            453.1,
+            446.7,
+            453.7,
+            434.5,
+            440
+          ],
+          "note": "two renames per run"
+        },
+        "preflightKeystrokeMs": {
+          "median": 1.5,
+          "min": 1.4,
+          "max": 2.2,
+          "runs": [
+            2.2,
+            1.8,
+            1.7,
+            1.5,
+            1.5,
+            1.5,
+            1.4,
+            1.4,
+            1.5,
+            1.4
+          ]
+        },
+        "listOrphansMs": {
+          "median": 206.8,
+          "min": 202.7,
+          "max": 221.4,
+          "runs": [
+            205.8,
+            202.7,
+            206,
+            209,
+            210.5,
+            214.5,
+            221.4,
+            205.1,
+            204.1,
+            207.6
+          ]
+        }
+      },
+      "large/stub": {
+        "listIpcMs": {
+          "median": 8635,
+          "min": 8378.4,
+          "max": 8981.2,
+          "runs": [
+            8981.2,
+            8454.9,
+            8378.4,
+            8759.7,
+            8781,
+            8669.1,
+            8805.4,
+            8521,
+            8601,
+            8524.2
+          ]
+        },
+        "refreshAndRenderMs": {
+          "median": 8684.9,
+          "min": 8214.3,
+          "max": 9269.9,
+          "runs": [
+            8214.3,
+            8638.8,
+            8540.5,
+            9269.9,
+            8763.7,
+            8757.1,
+            8648.6,
+            8721.2,
+            8539.2,
+            8723.6
+          ]
+        },
+        "renderProfilesMs": {
+          "median": 10.7,
+          "min": 8.4,
+          "max": 14.2,
+          "runs": [
+            10.6,
+            10.1,
+            14.2,
+            10.8,
+            11.8,
+            13.1,
+            11.2,
+            8.4,
+            9.9,
+            8.9
+          ]
+        },
+        "openManageMs": {
+          "median": 21.5,
+          "min": 19.3,
+          "max": 38.2,
+          "runs": [
+            33.7,
+            19.8,
+            21.8,
+            27.2,
+            21.2,
+            20.4,
+            19.3,
+            20.1,
+            24.4,
+            38.2
+          ]
+        },
+        "openSettingsMs": {
+          "median": 4.4,
+          "min": 3.2,
+          "max": 40.5,
+          "runs": [
+            40.5,
+            4.4,
+            4.9,
+            4.3,
+            4.7,
+            4.4,
+            4.4,
+            3.2,
+            3.9,
+            3.3
+          ]
+        },
+        "reorderMs": {
+          "median": 17277.7,
+          "min": 16576.1,
+          "max": 17418.9,
+          "runs": [
+            17418.9,
+            17394.4,
+            16576.1,
+            17208.4,
+            17277.7
+          ],
+          "note": "two moves (down + up) per run"
+        },
+        "renameMs": {
+          "median": 17315.3,
+          "min": 16707.6,
+          "max": 17818.5,
+          "runs": [
+            17315.3,
+            17818.5,
+            17390.3,
+            16707.6,
+            17000.1
+          ],
+          "note": "two renames per run"
+        },
+        "preflightKeystrokeMs": {
+          "median": 1.5,
+          "min": 1.3,
+          "max": 5.4,
+          "runs": [
+            5.4,
+            1.6,
+            2.1,
+            1.4,
+            1.4,
+            1.3,
+            1.5,
+            1.5,
+            1.5,
+            1.7
+          ]
+        },
+        "listOrphansMs": {
+          "median": 8569.2,
+          "min": 8180.1,
+          "max": 8710.9,
+          "runs": [
+            8180.1,
+            8547.5,
+            8449.5,
+            8611.6,
+            8619.4,
+            8564.5,
+            8710.9,
+            8573.8,
+            8453.6,
+            8580.4
+          ]
+        }
+      },
+      "xl/stub": {
+        "listIpcMs": {
+          "median": 41893.4,
+          "min": 41286.2,
+          "max": 42402,
+          "runs": [
+            42270.7,
+            41318.6,
+            41286.2,
+            42064.8,
+            41722,
+            42402,
+            42153.9,
+            42156.8,
+            41476.3,
+            41558.8
+          ]
+        },
+        "refreshAndRenderMs": {
+          "median": 42032.6,
+          "min": 41568.2,
+          "max": 43581.9,
+          "runs": [
+            41568.2,
+            41899.8,
+            42113.3,
+            41838.4,
+            42453.1,
+            42549.8,
+            43581.9,
+            41951.9,
+            41788.6,
+            42218.2
+          ]
+        },
+        "renderProfilesMs": {
+          "median": 59.9,
+          "min": 53.1,
+          "max": 69.2,
+          "runs": [
+            64.5,
+            54.1,
+            64.8,
+            62.5,
+            63.7,
+            57.3,
+            69.2,
+            53.1,
+            57.3,
+            54.1
+          ]
+        },
+        "openManageMs": {
+          "median": 168.1,
+          "min": 145.9,
+          "max": 191.1,
+          "runs": [
+            191.1,
+            173,
+            188.2,
+            166.6,
+            168.8,
+            167.1,
+            164.5,
+            167.4,
+            145.9,
+            171.2
+          ]
+        },
+        "openSettingsMs": {
+          "median": 3.3,
+          "min": 2.8,
+          "max": 39.8,
+          "runs": [
+            39.8,
+            5,
+            3.6,
+            3.6,
+            3.6,
+            2.9,
+            3.1,
+            2.9,
+            2.9,
+            2.8
+          ]
+        },
+        "reorderMs": {
+          "median": 88734.3,
+          "min": 84485.6,
+          "max": 99722.4,
+          "runs": [
+            92865.3,
+            84485.6,
+            87693.4,
+            88734.3,
+            99722.4
+          ],
+          "note": "two moves (down + up) per run"
+        },
+        "renameMs": {
+          "median": 100902.9,
+          "min": 86148.6,
+          "max": 109090.9,
+          "runs": [
+            97080.9,
+            104901.2,
+            86148.6,
+            100902.9,
+            109090.9
+          ],
+          "note": "two renames per run"
+        },
+        "preflightKeystrokeMs": {
+          "median": 2.3,
+          "min": 2.1,
+          "max": 5.6,
+          "runs": [
+            5.6,
+            5.2,
+            3,
+            2.6,
+            2.4,
+            2.3,
+            2.3,
+            2.3,
+            2.2,
+            2.1
+          ]
+        },
+        "listOrphansMs": {
+          "median": 56511.4,
+          "min": 50721.8,
+          "max": 71475.1,
+          "runs": [
+            54999.4,
+            58023.4,
+            64235.3,
+            58225.5,
+            51102.6,
+            50721.8,
+            51685.6,
+            58610.8,
+            71475.1,
+            53774.7
+          ]
+        }
+      },
+      "typical/detect": {
+        "listIpcMs": {
+          "median": 1930.5,
+          "min": 1910,
+          "max": 2051.5,
+          "runs": [
+            2051.5,
+            1920.1,
+            1910,
+            1930.5,
+            1935.2
+          ]
+        },
+        "refreshAndRenderMs": {
+          "median": 1889.9,
+          "min": 1838.2,
+          "max": 1941.3,
+          "runs": [
+            1864.9,
+            1932.6,
+            1889.9,
+            1838.2,
+            1941.3
+          ]
+        },
+        "renderProfilesMs": {
+          "median": 3.2,
+          "min": 2.9,
+          "max": 4,
+          "runs": [
+            3.7,
+            3.2,
+            4,
+            3,
+            2.9
+          ]
+        },
+        "openManageMs": {
+          "median": 5.7,
+          "min": 4.6,
+          "max": 16.2,
+          "runs": [
+            16.2,
+            5.7,
+            6.2,
+            4.6,
+            5.6
+          ]
+        },
+        "openSettingsMs": {
+          "median": 4.2,
+          "min": 3.6,
+          "max": 34.8,
+          "runs": [
+            34.8,
+            4.2,
+            3.6,
+            4.2,
+            4.6
+          ]
+        },
+        "reorderMs": {
+          "median": 3984.8,
+          "min": 3960.4,
+          "max": 4020.5,
+          "runs": [
+            4020.5,
+            3984.8,
+            3960.4
+          ],
+          "note": "two moves (down + up) per run"
+        },
+        "renameMs": {
+          "median": 3797.5,
+          "min": 3792,
+          "max": 3888.8,
+          "runs": [
+            3888.8,
+            3797.5,
+            3792
+          ],
+          "note": "two renames per run"
+        },
+        "preflightKeystrokeMs": {
+          "median": 1.6,
+          "min": 1.4,
+          "max": 2.1,
+          "runs": [
+            2,
+            2.1,
+            1.4,
+            1.5,
+            1.6
+          ]
+        },
+        "listOrphansMs": {
+          "median": 611.3,
+          "min": 565.1,
+          "max": 647.1,
+          "runs": [
+            623.6,
+            647.1,
+            611.3,
+            565.1,
+            596.3
+          ]
+        }
+      },
+      "__ranAt": "2026-09-18T03:58:55.967Z"
+    },
+    "sessions": {
+      "small": {
+        "openSessionsViewMs": {
+          "median": 241.8,
+          "min": 233.2,
+          "max": 399.9,
+          "runs": [
+            399.9,
+            245.7,
+            233.2,
+            235.6,
+            241.8
+          ]
+        },
+        "rows": 3,
+        "payloadKB": 0.8,
+        "renderListMs": {
+          "median": 3.1,
+          "min": 2.5,
+          "max": 4.7,
+          "runs": [
+            3.8,
+            4.7,
+            3.1,
+            4,
+            4.3,
+            3.1,
+            2.8,
+            2.6,
+            2.5,
+            2.6
+          ]
+        },
+        "filterKeystrokeMs": {
+          "median": 2.7,
+          "min": 1.4,
+          "max": 3.2,
+          "runs": [
+            2.9,
+            2.7,
+            3.2,
+            3.1,
+            2.7,
+            2.5,
+            1.4
+          ]
+        },
+        "memoryAfterList": {
+          "processes": 4,
+          "workingSetMB": 364.8,
+          "privateMB": 242.9,
+          "cpuMs": 3719
+        }
+      },
+      "typical": {
+        "openSessionsViewMs": {
+          "median": 494,
+          "min": 482.9,
+          "max": 728.7,
+          "runs": [
+            728.7,
+            488.3,
+            494,
+            482.9,
+            529.6
+          ]
+        },
+        "rows": 60,
+        "payloadKB": 16.1,
+        "renderListMs": {
+          "median": 26,
+          "min": 22.7,
+          "max": 36.7,
+          "runs": [
+            28.3,
+            26.8,
+            25.4,
+            36.7,
+            26.6,
+            23,
+            24.1,
+            22.7,
+            23.3,
+            27.7
+          ]
+        },
+        "filterKeystrokeMs": {
+          "median": 23,
+          "min": 5.4,
+          "max": 26,
+          "runs": [
+            23,
+            23.7,
+            22.3,
+            26,
+            24.3,
+            22.4,
+            5.4
+          ]
+        },
+        "memoryAfterList": {
+          "processes": 4,
+          "workingSetMB": 371.3,
+          "privateMB": 257.6,
+          "cpuMs": 5484
+        }
+      },
+      "large": {
+        "openSessionsViewMs": {
+          "median": 1449.6,
+          "min": 1415.7,
+          "max": 1909.5,
+          "runs": [
+            1909.5,
+            1474.1,
+            1426.1,
+            1415.7,
+            1449.6
+          ]
+        },
+        "rows": 215,
+        "payloadKB": 57.6,
+        "renderListMs": {
+          "median": 91.5,
+          "min": 77.3,
+          "max": 110.5,
+          "runs": [
+            110.5,
+            91.9,
+            91,
+            86,
+            109.8,
+            82.2,
+            82.2,
+            106.8,
+            77.3,
+            104
+          ]
+        },
+        "filterKeystrokeMs": {
+          "median": 78.5,
+          "min": 19.1,
+          "max": 92.2,
+          "runs": [
+            92.2,
+            85.3,
+            77,
+            72.3,
+            78.5,
+            84.4,
+            19.1
+          ]
+        },
+        "memoryAfterList": {
+          "processes": 4,
+          "workingSetMB": 459,
+          "privateMB": 362.2,
+          "cpuMs": 9547
+        }
+      },
+      "xl": {
+        "openSessionsViewMs": {
+          "median": 5663,
+          "min": 5517.3,
+          "max": 8055.5,
+          "runs": [
+            8055.5,
+            5864.5,
+            5517.3,
+            5663,
+            5582.7
+          ]
+        },
+        "rows": 1000,
+        "payloadKB": 268.4,
+        "renderListMs": {
+          "median": 78.9,
+          "min": 68.2,
+          "max": 99.2,
+          "runs": [
+            89.8,
+            91.7,
+            68.2,
+            70.8,
+            95.8,
+            76.5,
+            81.3,
+            99.2,
+            72.9,
+            70.2
+          ]
+        },
+        "filterKeystrokeMs": {
+          "median": 81.1,
+          "min": 26.7,
+          "max": 94.2,
+          "runs": [
+            94.2,
+            91.6,
+            74.2,
+            81.1,
+            87.1,
+            75.7,
+            26.7
+          ]
+        },
+        "memoryAfterList": {
+          "processes": 4,
+          "workingSetMB": 446.6,
+          "privateMB": 342.7,
+          "cpuMs": 9922
+        }
+      },
+      "__ranAt": "2026-09-18T04:00:17.482Z"
+    },
+    "export": {
+      "1KB": {
+        "exportMs": {
+          "median": 2089,
+          "min": 2040.7,
+          "max": 2489.9,
+          "runs": [
+            2489.9,
+            2083.6,
+            2040.7,
+            2121.1,
+            2089
+          ]
+        },
+        "zipMB": 0,
+        "turns": 1
+      },
+      "1MB": {
+        "exportMs": {
+          "median": 2870.2,
+          "min": 2816.6,
+          "max": 2977.8,
+          "runs": [
+            2882.8,
+            2816.6,
+            2870.2,
+            2977.8,
+            2829
+          ]
+        },
+        "zipMB": 0.76,
+        "turns": 10
+      },
+      "20MB": {
+        "exportMs": {
+          "median": 9702.9,
+          "min": 9496.2,
+          "max": 9775.4,
+          "runs": [
+            9496.2,
+            9775.4,
+            9640.2,
+            9737.5,
+            9702.9
+          ]
+        },
+        "zipMB": 11.15,
+        "turns": 115
+      },
+      "50MB": {
+        "exportMs": {
+          "median": 20353,
+          "min": 20264.5,
+          "max": 20977.7,
+          "runs": [
+            20977.7,
+            20353,
+            20264.5
+          ]
+        },
+        "zipMB": 28.43,
+        "turns": 298
+      },
+      "100MB": {
+        "exportMs": {
+          "median": 40962,
+          "min": 40215.2,
+          "max": 40990.5,
+          "runs": [
+            40990.5,
+            40215.2,
+            40962
+          ]
+        },
+        "zipMB": 58.2,
+        "turns": 566
+      },
+      "__ranAt": "2026-09-18T04:04:47.952Z"
+    },
+    "memory": {
+      "idle": {
+        "processes": 4,
+        "workingSetMB": 340.3,
+        "privateMB": 223.5,
+        "cpuMs": 2953
+      },
+      "idleCpuPctOfOneCore": 0.1,
+      "idleWindowSec": 30,
+      "__ranAt": "2026-09-18T04:05:43.296Z"
+    }
+  },
+  "environment": {
+    "cold": {
+      "before": {
+        "at": "2026-09-18T03:03:19.843Z",
+        "freeRamGB": 2.73,
+        "cpuLoadPct": 14.7
+      },
+      "after": {
+        "at": "2026-09-18T03:09:53.643Z",
+        "freeRamGB": 3.22,
+        "cpuLoadPct": 15.5
+      },
+      "power": "AC"
+    },
+    "actions": {
+      "before": {
+        "at": "2026-09-18T03:10:01.576Z",
+        "freeRamGB": 3.06,
+        "cpuLoadPct": 19.6
+      },
+      "after": {
+        "at": "2026-09-18T03:58:49.320Z",
+        "freeRamGB": 3.31,
+        "cpuLoadPct": 8.8
+      },
+      "power": "AC"
+    },
+    "sessions": {
+      "before": {
+        "at": "2026-09-18T03:58:59.294Z",
+        "freeRamGB": 3.29,
+        "cpuLoadPct": 5.7
+      },
+      "after": {
+        "at": "2026-09-18T04:00:13.174Z",
+        "freeRamGB": 3.19,
+        "cpuLoadPct": 20.3
+      },
+      "power": "AC"
+    },
+    "export": {
+      "before": {
+        "at": "2026-09-18T04:00:20.811Z",
+        "freeRamGB": 3.2,
+        "cpuLoadPct": 7.6
+      },
+      "after": {
+        "at": "2026-09-18T04:04:43.459Z",
+        "freeRamGB": 2.61,
+        "cpuLoadPct": 37.1
+      },
+      "power": "AC"
+    },
+    "memory": {
+      "before": {
+        "at": "2026-09-18T04:04:51.317Z",
+        "freeRamGB": 2.62,
+        "cpuLoadPct": 11.9
+      },
+      "after": {
+        "at": "2026-09-18T04:05:38.806Z",
+        "freeRamGB": 2.66,
+        "cpuLoadPct": 17.6
+      },
+      "power": "AC"
+    }
+  },
+  "machine": {
+    "cpu": "AMD Ryzen 5 7530U with Radeon Graphics",
+    "logicalCores": 12,
+    "ramGB": 14.8,
+    "os": "Microsoft Windows 11 Home Single Language 10.0.26200",
+    "arch": "x64",
+    "disk": "SSD NVMe",
+    "power": "AC",
+    "node": "v22.17.1"
+  },
+  "electron": null,
+  "method": {
+    "coldStartRuns": 5,
+    "warmupRunsDiscarded": 1,
+    "build": "packaged win-unpacked, portable mode, driven over DevTools protocol"
+  }
+}
