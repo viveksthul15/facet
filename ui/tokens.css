@@ -1,0 +1,191 @@
+/* Braceview design tokens ("Aurora") — copy into another project as-is.
+ *
+ * Light is the default; add data-theme="dark" on <html> (or any wrapper) for dark.
+ * To follow the OS instead, see the @media block at the bottom.
+ *
+ *   <html data-theme="dark"> … </html>
+ *   body { background: var(--bg-chrome); color: var(--text); font-family: var(--font-ui); }
+ */
+
+:root {
+  /* ---------------------------------------------------------- typography */
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "Cascadia Mono", "SF Mono", Menlo, "JetBrains Mono", Consolas, monospace;
+  --font-serif: Charter, Georgia, Cambria, serif;
+
+  /* ---------------------------------------------------------- shape */
+  --radius: 8px;      /* cards, inputs, large buttons */
+  --radius-sm: 6px;   /* small buttons, chips */
+
+  /* ---------------------------------------------------------- brand */
+  --brand-1: #10b981;                                             /* emerald */
+  --brand-2: #0ea5e9;                                             /* sky */
+  --brand-gradient: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%);
+  --brand-glow: rgba(14, 165, 233, .4);
+
+  /* Accent: the interactive colour (links, focus, primary buttons) */
+  --accent: #0e7490;
+  --accent-hover: #155e75;
+  --accent-soft: rgba(14, 116, 144, .35);   /* outlines, focus rings */
+  --accent-bg: rgba(14, 116, 144, .1);      /* tinted backgrounds */
+  --on-accent: #fff;                        /* text on accent fills */
+
+  /* ---------------------------------------------------------- status */
+  --danger: #d93a3a;
+  --danger-bg: rgba(217, 58, 58, .1);
+  --warn: #b7791f;
+  --warn-bg: rgba(214, 158, 46, .14);
+  --success: #2f9e5b;
+
+  /* ---------------------------------------------------------- surfaces */
+  --bg-chrome: #f3f4f7;   /* app frame, toolbars, sidebars */
+  --bg-doc: #ffffff;      /* main content area */
+  --bg-elev: #ffffff;     /* menus, dialogs, cards */
+  --bg-input: #ffffff;
+  --bg-hover: rgba(20, 24, 40, .06);
+  --bg-active: rgba(20, 24, 40, .1);
+  --chip: #eef0f4;        /* pills, badges, code background */
+
+  /* ---------------------------------------------------------- lines and text */
+  --border: #e2e4ea;
+  --border-strong: #d0d4dc;
+  --text: #1d2130;
+  --text-muted: #5c6475;
+  --text-faint: #9aa1af;
+
+  /* ---------------------------------------------------------- effects */
+  --shadow: 0 10px 30px -8px rgba(20, 24, 40, .22), 0 2px 6px rgba(20, 24, 40, .06);
+  --shadow-sm: 0 1px 2px rgba(20, 24, 40, .08);
+  --selection: rgba(14, 165, 233, .2);
+  --active-line: rgba(20, 24, 40, .035);
+  --match-bg: rgba(250, 204, 21, .35);        /* search highlight */
+  --match-outline: rgba(202, 138, 4, .5);
+  --match-current: rgba(249, 115, 22, .55);   /* current match */
+  --guide: #e8eaef;                           /* indent guides, dividers */
+
+  /* ---------------------------------------------------------- syntax (code) */
+  --syn-key: #7c3aed;
+  --syn-string: #0f7b5f;
+  --syn-number: #c2410c;
+  --syn-bool: #1d4ed8;
+  --syn-null: #8a8f9c;
+  --syn-keyword: #b8267a;
+  --syn-comment: #8a8f9c;
+  --syn-heading: #1f3fb8;
+  --syn-link: #2563eb;
+  --syn-code: #b8267a;
+  --syn-punct: #6b7280;
+  --syn-type: #b45309;
+  --syn-fn: #6d28d9;
+
+  /* ---------------------------------------------------------- long-form text */
+  --prose-max: 860px;
+  --prose-size: 16px;
+  --prose-line: 1.72;
+  --prose-text: #262b38;
+  --prose-heading: #111522;
+  --prose-muted: #5c6475;
+  --prose-link: #0369a1;
+  --prose-border: #e3e6eb;
+  --prose-quote: #d8dce3;
+  --prose-code-bg: #f5f6f8;
+  --prose-mark: #fff3a3;
+  --prose-stripe: #f8f9fb;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --brand-glow: rgba(45, 212, 191, .3);
+
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-soft: rgba(45, 212, 191, .4);
+  --accent-bg: rgba(45, 212, 191, .13);
+  --on-accent: #042f2e;
+
+  --danger: #f06a6a;
+  --danger-bg: rgba(240, 106, 106, .14);
+  --warn: #e3b341;
+  --warn-bg: rgba(227, 179, 65, .14);
+  --success: #4cc38a;
+
+  --bg-chrome: #16181d;
+  --bg-doc: #1c1f26;
+  --bg-elev: #242832;
+  --bg-input: #15171c;
+  --bg-hover: rgba(255, 255, 255, .06);
+  --bg-active: rgba(255, 255, 255, .1);
+  --chip: #2a2e38;
+
+  --border: #2d313b;
+  --border-strong: #3a3f4b;
+  --text: #e3e6ed;
+  --text-muted: #a1a7b4;
+  --text-faint: #6c7383;
+
+  --shadow: 0 16px 40px -8px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --selection: rgba(45, 212, 191, .26);
+  --active-line: rgba(255, 255, 255, .03);
+  --match-bg: rgba(250, 204, 21, .25);
+  --match-outline: rgba(250, 204, 21, .45);
+  --match-current: rgba(249, 115, 22, .55);
+  --guide: #2b2f38;
+
+  --syn-key: #c4a5ff;
+  --syn-string: #7dd3a8;
+  --syn-number: #f5a86a;
+  --syn-bool: #7fb0ff;
+  --syn-null: #8b92a1;
+  --syn-keyword: #f47fb8;
+  --syn-comment: #737a89;
+  --syn-heading: #9db4ff;
+  --syn-link: #7fb0ff;
+  --syn-code: #f59fc8;
+  --syn-punct: #8b92a1;
+  --syn-type: #f0c674;
+  --syn-fn: #c4a5ff;
+
+  --prose-text: #d5d9e2;
+  --prose-heading: #f1f3f8;
+  --prose-muted: #9aa1b0;
+  --prose-link: #7dd3fc;
+  --prose-border: #30343f;
+  --prose-quote: #3a3f4b;
+  --prose-code-bg: #242833;
+  --prose-mark: rgba(250, 204, 21, .3);
+  --prose-stripe: #20242c;
+
+  color-scheme: dark;
+}
+
+/* Marketing pages use deeper backgrounds than the app; pair them with --brand-gradient. */
+:root {
+  --night: #071a22;
+  --night-2: #0c2a33;
+  --paper: #f6fbfa;
+  --ink: #0b1b24;
+  --ink-2: #334155;
+  --bg-night:
+    radial-gradient(1200px 700px at 85% 110%, rgba(14, 165, 233, .35), transparent 60%),
+    radial-gradient(900px 600px at 0% -10%, rgba(16, 185, 129, .35), transparent 60%),
+    var(--night);
+}
+
+/* Follow the operating system instead of a data-theme attribute:
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { … copy the [data-theme="dark"] block here … }
+}
+*/
+
+/* ---------------------------------------------------------------- recipes
+ * Primary button:  background: var(--brand-gradient); color: #fff; border-radius: var(--radius-sm);
+ * Secondary:       background: var(--bg-elev); border: 1px solid var(--border); color: var(--text);
+ * Card:            background: var(--bg-elev); border: 1px solid var(--border);
+ *                  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+ * Focus ring:      outline: 2px solid var(--accent-soft); outline-offset: 2px;
+ * Gradient text:   background: var(--brand-gradient); -webkit-background-clip: text; color: transparent;
+ * Transitions:     .12s for colour, .06s for press; nothing longer than .2s.
+ */

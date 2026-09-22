@@ -1,53 +1,32 @@
+/* Facet's own names, expressed in the Aurora tokens from tokens.css. Aurora's light palette is
+   the default and its dark palette comes from [data-theme="dark"], which panel.html sets, so both
+   themes follow the design system rather than a second copy of it. */
 :root {
-  --ground: #0B0C0F;
-  --surface: #15171C;
-  --surface-2: #1D2027;
-  --surface-3: #262A32;
-  --border: #262A32;
-  --border-strong: #363B46;
-  --text: #E7E9EF;
-  --text-muted: #8A90A0;
-  --text-subtle: #5A5F6E;
-  --accent: #6E86FF;
-  --accent-soft: rgba(110, 134, 255, 0.14);
-  --good: #4ADE80;
-  --warn: #F59E0B;
-  --danger: #F87171;
-  --lane-indigo: #6E86FF;
-  --lane-emerald: #4ADE80;
-  --lane-amber: #F59E0B;
-  --lane-rose: #F472B6;
-  --lane-violet: #A78BFA;
-  --lane-sky: #38BDF8;
-  --shadow-panel: 0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 60px rgba(0,0,0,0.55), 0 6px 20px rgba(0,0,0,0.4);
+  --ground: var(--bg-chrome);
+  --surface: var(--bg-elev);
+  --surface-2: var(--chip);
+  --surface-3: var(--bg-active);
+  --text-subtle: var(--text-faint);
+  --good: var(--success);
+
+  /* Profile accents, drawn from the Aurora families (brand, syntax, status). */
+  --lane-indigo: var(--syn-bool);
+  --lane-emerald: var(--brand-1);
+  --lane-amber: var(--warn);
+  --lane-rose: var(--syn-keyword);
+  --lane-violet: var(--syn-key);
+  --lane-sky: var(--brand-2);
+
+  --shadow-panel: var(--shadow);
   --radius-panel: 12px;
-  --radius-row: 8px;
-  --font-ui: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", -apple-system, system-ui, sans-serif;
-  --font-mono: "Cascadia Code", "Consolas", ui-monospace, "SFMono-Regular", monospace;
+  --radius-row: var(--radius);
 }
 
-:root[data-theme="light"] {
-  --ground: #F3F4F7;
-  --surface: #FFFFFF;
-  --surface-2: #F5F6F9;
-  --surface-3: #EBEDF2;
-  --border: #E4E6EC;
-  --border-strong: #D2D6DE;
-  --text: #14161B;
-  --text-muted: #5A6070;
-  --text-subtle: #8A90A0;
-  --accent: #4A63E7;
-  --accent-soft: rgba(74, 99, 231, 0.10);
-  --good: #16A34A;
-  --warn: #D97706;
-  --danger: #DC2626;
-  --lane-indigo: #4A63E7;
-  --lane-emerald: #16A34A;
-  --lane-amber: #D97706;
-  --lane-rose: #DB2777;
-  --lane-violet: #7C3AED;
-  --lane-sky: #0284C7;
-  --shadow-panel: 0 1px 0 rgba(255,255,255,0.8) inset, 0 20px 44px rgba(20,22,27,0.16), 0 4px 14px rgba(20,22,27,0.08);
+:root[data-theme="dark"] {
+  --lane-indigo: var(--syn-bool);
+  --lane-emerald: #34d399;   /* brand emerald, lifted for a dark surface */
+  --lane-sky: #38bdf8;
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.04) inset, var(--shadow);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -217,7 +196,7 @@ input { font-family: var(--font-ui); }
 .lane .badge-adopted {
   font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--accent); padding: 2px 6px; border-radius: 999px;
-  background: var(--accent-soft); font-weight: 600;
+  background: var(--accent-bg); font-weight: 600;
 }
 
 .divider { height: 1px; background: var(--border); margin: 2px 8px; }
@@ -266,7 +245,7 @@ input { font-family: var(--font-ui); }
   .onboarding-card { gap: 9px; }
 }
 .btn-primary {
-  padding: 9px 12px; border-radius: 7px; background: var(--accent); color: white;
+  padding: 9px 12px; border-radius: var(--radius-sm); background: var(--brand-gradient); color: #fff;
   font-size: 12.5px; font-weight: 500;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   box-shadow: 0 1px 0 rgba(255,255,255,0.14) inset, 0 1px 2px rgba(0,0,0,0.2);
@@ -313,7 +292,7 @@ input { font-family: var(--font-ui); }
   flex: 1; padding: 6px 10px; border-radius: 6px;
   font-size: 11.5px; font-weight: 500;
 }
-.adopt-banner .btn-mini.primary { background: var(--accent); color: white; }
+.adopt-banner .btn-mini.primary { background: var(--brand-gradient); color: #fff; border-color: transparent; }
 .adopt-banner .btn-mini.ghost {
   background: var(--surface); color: var(--text-muted); border: 1px solid var(--border);
 }
@@ -349,14 +328,14 @@ input { font-family: var(--font-ui); }
   display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px;
   background: var(--surface-2); border: 1px solid var(--border); cursor: pointer;
 }
-.app-opt.is-checked { border-color: var(--accent); background: var(--accent-soft); }
+.app-opt.is-checked { border-color: var(--accent); background: var(--accent-bg); }
 .app-opt .app-icon {
   width: 24px; height: 24px; border-radius: 6px; background: var(--surface-3);
   display: inline-flex; align-items: center; justify-content: center;
   font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text);
   flex-shrink: 0;
 }
-.app-opt.is-checked .app-icon { background: var(--accent); color: white; }
+.app-opt.is-checked .app-icon { background: var(--accent); color: var(--on-accent); }
 .app-opt .app-body { display: flex; flex-direction: column; min-width: 0; }
 .app-opt .app-name { font-size: 12.5px; font-weight: 500; }
 .app-opt .app-sub { font-size: 11px; color: var(--text-muted); }
@@ -413,7 +392,7 @@ input { font-family: var(--font-ui); }
 .adopted-chip {
   font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--accent); padding: 2px 6px; border-radius: 999px;
-  background: var(--accent-soft); font-weight: 600;
+  background: var(--accent-bg); font-weight: 600;
 }
 
 .warn-strip {
@@ -450,7 +429,7 @@ input { font-family: var(--font-ui); }
   padding: 3px 8px; border-radius: 999px;
   background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
 }
-.source-pill.source-custom { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--accent-soft); }
+.source-pill.source-custom { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--accent-bg); }
 .source-pill.source-installer { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, var(--border)); background: color-mix(in srgb, var(--good) 10%, transparent); }
 .source-pill.source-msix { color: var(--lane-sky); border-color: color-mix(in srgb, var(--lane-sky) 40%, var(--border)); background: color-mix(in srgb, var(--lane-sky) 10%, transparent); }
 .source-pill.source-none { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); background: color-mix(in srgb, var(--danger) 10%, transparent); }
@@ -505,7 +484,7 @@ input { font-family: var(--font-ui); }
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted);
 }
 .confirm-card .actions .cancel:hover { color: var(--text); }
-.confirm-card .actions .destroy { background: var(--danger); color: white; font-weight: 500; }
+.confirm-card .actions .destroy { background: var(--danger); color: #fff; font-weight: 500; }
 
 /* ============ Inline rename ============ */
 .inline-rename {
@@ -576,7 +555,7 @@ input { font-family: var(--font-ui); }
 .kbd-plus { color: var(--text-subtle); font-size: 11px; margin: 0 2px; }
 .hotkey-recorder {
   padding: 12px 14px; border-radius: 7px; text-align: center;
-  background: var(--accent-soft); border: 1px dashed var(--accent); color: var(--text);
+  background: var(--accent-bg); border: 1px dashed var(--accent); color: var(--text);
   font-size: 12px; cursor: text; outline: none;
   animation: hotkey-pulse 1.6s ease-in-out infinite;
 }
@@ -630,7 +609,7 @@ input { font-family: var(--font-ui); }
 /* ============ Add-view preflight surfaces ============ */
 .adopt-inline {
   padding: 10px 12px; border-radius: 8px;
-  background: var(--accent-soft);
+  background: var(--accent-bg);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
   display: flex; align-items: flex-start; gap: 10px;
 }
@@ -670,7 +649,7 @@ input { font-family: var(--font-ui); }
   border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
   color: var(--danger);
 }
-.preflight-actions .btn-mini.destroy:hover { color: white; background: var(--danger); }
+.preflight-actions .btn-mini.destroy:hover { color: #fff; background: var(--danger); }
 
 /* ============ Recovery view ============ */
 .orphan-list { display: flex; flex-direction: column; gap: 6px; }
@@ -705,7 +684,7 @@ input { font-family: var(--font-ui); }
   padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 500;
   border: 1px solid var(--border);
 }
-.orphan-actions .btn-mini.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.orphan-actions .btn-mini.primary { background: var(--brand-gradient); color: #fff; border-color: transparent; }
 .orphan-actions .btn-mini.danger {
   background: transparent; color: var(--danger);
   border-color: color-mix(in srgb, var(--danger) 30%, var(--border));

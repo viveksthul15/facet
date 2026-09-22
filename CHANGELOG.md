@@ -2,6 +2,13 @@
 
 ## 0.2.1 — 2026-09-22
 
+### Changed
+- **New colour system.** The panel now draws its colours from the shared "Aurora" design tokens
+  (`ui/tokens.css`) instead of its own palette: teal accent, emerald-to-sky brand gradient on
+  primary buttons, and the Aurora surface, border and text ramps in both themes. Profile accents
+  come from the same families. Facet's own token names are kept as a thin mapping layer, so the
+  rest of the stylesheet is unchanged.
+
 ### Fixed
 - **Adopting an existing Claude session could open a signed-out window.** Facet offered adoption
   whenever `%APPDATA%\Claude` existed, even when that folder held no session — which happens with
