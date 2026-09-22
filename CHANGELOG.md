@@ -4,8 +4,8 @@
 
 ### Changed
 - **New colour system.** The panel now draws its colours from the shared "Aurora" design tokens
-  (`ui/tokens.css`) instead of its own palette: teal accent, emerald-to-sky brand gradient on
-  primary buttons, and the Aurora surface, border and text ramps in both themes. Profile accents
+  (`ui/tokens.css`) instead of its own palette: teal accent on primary buttons (with the token's own
+  `--on-accent` ink), and the Aurora surface, border and text ramps in both themes. Profile accents
   come from the same families. Facet's own token names are kept as a thin mapping layer, so the
   rest of the stylesheet is unchanged.
 
