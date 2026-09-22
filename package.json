@@ -1,7 +1,7 @@
 {
   "name": "facet",
   "productName": "Facet",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "One identity, many facets. A tiny Windows tray launcher that runs Claude Desktop on the right session, every time.",
   "main": "main.js",
   "scripts": {

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.1 — 2026-09-22
+
+### Fixed
+- **Adopting an existing Claude session could open a signed-out window.** Facet offered adoption
+  whenever `%APPDATA%\Claude` existed, even when that folder held no session — which happens with
+  the Microsoft Store build on machines where Windows has not linked that path to the package's
+  own storage, or where an uninstalled classic build left the folder behind. Facet now looks in
+  both places, only offers adoption when a signed-in session is actually there, and shows the
+  folder it found in the adopt banner.
+- **An adopted profile now launches Claude the way Claude launches itself**, with no
+  `--user-data-dir` override. An adopted profile *is* Claude's own session, so naming the
+  directory could only ever get it wrong.
+- Adopted profiles record the directory they adopted, so a later Windows or Claude change cannot
+  silently repoint them. Profiles adopted before 0.2.1 keep working unchanged.
+
 ## 0.2.0 — 2026-09-18
 
 The speed release. Same features, same memory, a lot less waiting. Every number below is a

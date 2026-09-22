@@ -747,3 +747,9 @@ input { font-family: var(--font-ui); }
 .ses-select:disabled { opacity: 0.45; }
 
 .ses-more[hidden] { display: none; }
+
+.adopt-path {
+  font-family: var(--mono, ui-monospace, "Cascadia Mono", Consolas, monospace);
+  font-size: 10.5px; color: var(--text-subtle); margin: 2px 0 8px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left;
+}

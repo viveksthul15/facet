@@ -8,6 +8,7 @@ const state = {
   claudeExeSource: null,
   claudeProbing: false,
   adoptable: false,
+  adoptableDir: '',
   paths: { root: '', claudeData: '' },
   settings: {},
   lockedSettings: [],
@@ -214,6 +215,7 @@ function renderAdoptBanner() {
   return el('div', { class: 'adopt-banner' },
     el('div', { class: 'adopt-head' }, el('span', { class: 'accent-dot' }), 'Existing Claude session detected'),
     el('p', {}, 'Adopt your signed-in session as a profile — no re-login. Tag it however you like.'),
+    state.adoptableDir && el('div', { class: 'adopt-path', title: state.adoptableDir }, state.adoptableDir),
     el('div', { class: 'adopt-form' },
       el('div', { class: 'input-wrap adopt-input' },
         el('input', { id: 'adopt-name', type: 'text', value: state.adopt.name, spellcheck: 'false',
@@ -710,6 +712,7 @@ async function refresh() {
   // is already adopted. Was previously gated on profiles.length === 0, which meant
   // you couldn't adopt once you'd created any other profile first.
   state.adoptable = data.adoptable && !data.profiles.some(p => p.adopted);
+  state.adoptableDir = data.adoptableDir || '';
   state.paths = data.paths;
   state.settings = data.settings || {};
   state.lockedSettings = data.lockedSettings || [];
@@ -736,7 +739,12 @@ async function onAdopt() {
   if (!name) { state.adopt.error = 'Give it a name first.'; render(); return; }
   const r = await api.add({ name, color: state.adopt.color, adopted: true });
   if (!r.ok) {
-    state.adopt.error = r.error === 'duplicate' ? 'A profile with that name already exists.' : `Error: ${r.error}`;
+    const adoptErrors = {
+      'duplicate-name': 'A profile with that name already exists.',
+      'already-adopted': 'You can only adopt one existing Claude session.',
+      'no-session-to-adopt': 'No signed-in Claude session found any more. Open Claude, sign in, then try again.',
+    };
+    state.adopt.error = adoptErrors[r.error] || `Error: ${r.error}`;
     render();
     return;
   }
@@ -760,6 +768,7 @@ async function onCreateWith(orphanAction) {
     const messages = {
       'duplicate-name': 'A profile with that name already exists.',
       'already-adopted': 'You can only adopt one existing Claude session.',
+      'no-session-to-adopt': 'No signed-in Claude session found any more. Open Claude, sign in, then try again.',
       'orphan-exists': 'That name matches an old data folder — pick Reuse or Wipe first.',
       'wipe-failed': 'Could not delete the old data folder. Close any Claude windows and try again.',
     };

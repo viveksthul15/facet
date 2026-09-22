@@ -36,6 +36,18 @@ const SESSION_LIST_CACHE_JSON = path.join(CACHE_DIR, 'session-list.json');
 const CLAUDE_DATA_DIR = path.join(app.getPath('appData'), 'Claude');
 const CLAUDE_MSIX_PACKAGE_FAMILY = 'Claude_pzs8sxrjxfjjc';
 
+// Where a signed-in Claude Desktop keeps its session. The classic installer uses %APPDATA%\Claude.
+// The Microsoft Store build writes into its package container instead; Windows usually exposes that
+// as a link at %APPDATA%\Claude, but not on every machine — and where the link is missing, that
+// folder can still exist and be empty (an uninstalled classic build leaves one behind). Adopting
+// the empty one is what produced a signed-out window, so both are checked and only a directory
+// that actually holds session state counts.
+const CLAUDE_MSIX_DATA_DIR = path.join(
+  LOCAL_APPDATA, 'Packages', CLAUDE_MSIX_PACKAGE_FAMILY, 'LocalCache', 'Roaming', 'Claude');
+const CLAUDE_DATA_CANDIDATES = [CLAUDE_DATA_DIR, CLAUDE_MSIX_DATA_DIR];
+// Chromium writes these once a profile is signed in; an empty or freshly created directory has none.
+const SESSION_MARKERS = ['Local Storage', 'IndexedDB', path.join('Network', 'Cookies')];
+
 const CLAUDE_EXE_CANDIDATES = [
   path.join(process.env.LOCALAPPDATA || '', 'AnthropicClaude', 'Claude.exe'),
   path.join(process.env.LOCALAPPDATA || '', 'Programs', 'claude-desktop', 'Claude.exe'),
@@ -331,8 +343,33 @@ function invalidateClaudeExeCache() {
   claudeExeCache = { done: false, path: null, source: null };
 }
 
-function detectAdoptable() {
-  return fs.existsSync(CLAUDE_DATA_DIR);
+function hasClaudeSession(dir) {
+  try { return SESSION_MARKERS.some(m => fs.existsSync(path.join(dir, m))); }
+  catch { return false; }
+}
+
+/**
+ * The signed-in Claude data directory to offer for adoption, or null when there is nothing to
+ * adopt. Candidates that resolve to the same folder (the Store link) are only considered once,
+ * and when both hold a session the more recently used one wins.
+ */
+function detectAdoptableDir() {
+  const seen = new Set();
+  const found = [];
+  for (const dir of CLAUDE_DATA_CANDIDATES) {
+    if (!dir || !fs.existsSync(dir)) continue;
+    let real = dir;
+    try { real = fs.realpathSync.native(dir); } catch {}
+    const key = real.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!hasClaudeSession(dir)) continue;
+    let mtime = 0;
+    try { mtime = fs.statSync(path.join(dir, 'Local Storage')).mtimeMs || fs.statSync(dir).mtimeMs; } catch {}
+    found.push({ dir, mtime });
+  }
+  found.sort((a, b) => b.mtime - a.mtime);
+  return found.length ? found[0].dir : null;
 }
 
 function slugify(name) {
@@ -340,7 +377,9 @@ function slugify(name) {
 }
 
 function profileDir(profile) {
-  if (profile.adopted) return CLAUDE_DATA_DIR;
+  // Adopted profiles carry the directory that was adopted; profiles adopted before 0.2.1 predate
+  // that field and always meant %APPDATA%\Claude.
+  if (profile.adopted) return profile.dataDir || CLAUDE_DATA_DIR;
   return path.join(PROFILE_ROOT, 'profiles', profile.slug);
 }
 
@@ -357,8 +396,12 @@ function launchProfile(profile) {
   }
   const dir = profileDir(profile);
   if (!profile.adopted && !fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  // An adopted profile IS Claude's own session, so it launches the way Claude launches itself.
+  // Naming the directory explicitly is what broke the Store build on a machine without the
+  // %APPDATA%\Claude link: the path existed, held no session, and Claude opened signed out.
+  const args = profile.adopted ? [] : [`--user-data-dir=${dir}`];
   try {
-    const child = spawn(exe, [`--user-data-dir=${dir}`], {
+    const child = spawn(exe, args, {
       detached: true, stdio: 'ignore', windowsHide: false,
     });
     child.unref();
@@ -368,7 +411,7 @@ function launchProfile(profile) {
       broadcastRunning();
     });
     broadcastRunning();
-    log('info', 'launched', { id: profile.id, name: profile.name, adopted: !!profile.adopted, dir });
+    log('info', 'launched', { id: profile.id, name: profile.name, adopted: !!profile.adopted, dir: profile.adopted ? `${dir} (Claude default)` : dir });
     return { ok: true };
   } catch (e) {
     log('error', 'spawn failed', e.message);
@@ -637,14 +680,16 @@ ipcMain.handle('profiles:list', () => {
   const profiles = loadProfiles();
   const orphans = orphanDirNames(profiles);
   const claude = resolveClaudeExeFast();
+  const adoptableDir = detectAdoptableDir();
   return {
     profiles,
     running: Array.from(running),
     claudeExe: claude.path,
     claudeExeSource: claude.source,
     claudeExeProbing: claude.probing,
-    adoptable: detectAdoptable(),
-    paths: { root: PROFILE_ROOT, claudeData: CLAUDE_DATA_DIR },
+    adoptable: !!adoptableDir,
+    adoptableDir,
+    paths: { root: PROFILE_ROOT, claudeData: adoptableDir || CLAUDE_DATA_DIR },
     settings: effective,
     lockedSettings: locked,
     portable: IS_PORTABLE,
@@ -700,6 +745,11 @@ ipcMain.handle('profiles:add', (_e, { name, color, adopted, orphanAction }) => {
   if (adopted && hasAnyAdopted(profiles)) {
     return { ok: false, error: 'already-adopted' };
   }
+  let adoptedDir = null;
+  if (adopted) {
+    adoptedDir = detectAdoptableDir();
+    if (!adoptedDir) return { ok: false, error: 'no-session-to-adopt' };
+  }
   // Guard: for a non-adopted (fresh) profile, if the slug's folder already exists on disk,
   // the caller must tell us what to do — reuse the existing data or wipe it. This is the
   // exact bug that caused a "wrong Personal" to appear: silent reuse of stale data.
@@ -720,6 +770,7 @@ ipcMain.handle('profiles:add', (_e, { name, color, adopted, orphanAction }) => {
     name: name.trim(), slug,
     color: color || 'indigo',
     adopted: !!adopted,
+    ...(adoptedDir ? { dataDir: adoptedDir } : {}),
     createdAt: new Date().toISOString(),
   };
   profiles.push(profile);
