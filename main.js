@@ -507,6 +507,7 @@ function createPanel() {
   panel = new BrowserWindow({
     width: 340,
     height: 560,
+    minHeight: 240,
     show: false,
     frame: false,
     resizable: false,
@@ -1074,7 +1075,12 @@ ipcMain.handle('panel:resize', (_e, { height }) => {
     ? screen.getDisplayNearestPoint({ x: anchor.x, y: anchor.y })
     : screen.getPrimaryDisplay();
   const maxH = Math.max(320, Math.min(940, display.workArea.height - 48));
-  panel.setSize(w, Math.max(240, Math.min(maxH, Math.round(height))), false);
+  const target = Math.max(240, Math.min(maxH, Math.round(height)));
+  // A window created with resizable:false keeps its current size as its minimum on Windows, so
+  // setSize could only ever make the panel taller. Once a tall view had been opened the panel
+  // stayed that tall, ran past the bottom of the screen, and cut off whatever sat at its foot.
+  panel.setMinimumSize(w, 240);
+  panel.setSize(w, target, false);
   if (tray) positionPanel(tray.getBounds());
 });
 

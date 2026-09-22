@@ -14,6 +14,20 @@
   directory could only ever get it wrong.
 - Adopted profiles record the directory they adopted, so a later Windows or Claude change cannot
   silently repoint them. Profiles adopted before 0.2.1 keep working unchanged.
+- **The panel could only ever grow, never shrink.** Its window is not resizable, and Windows then
+  treats the current size as the minimum — so after any tall view (Settings, a long profile list)
+  the panel stayed that tall and ran off the bottom of the screen, cutting off whatever sat at its
+  foot. This is why "Got it" on the welcome card, and the adopt buttons, appeared sliced on
+  smaller or scaled displays.
+- **A view's content is now one scroll region instead of several.** The empty state had the hero,
+  the adopt banner and the call to action each scrolling separately, so on a short panel they
+  competed for space and the button lost.
+- **Dialog buttons stay pinned** while the text above them scrolls, so the primary action is never
+  below the fold. "Create a new profile" now sits outside the scroll region for the same reason.
+- On a short panel (a small screen, or Windows at 125–150% scale) the welcome and empty states drop
+  their decorative marks and tighten up, which is usually enough to avoid scrolling at all.
+- `bench/verify-layout.mjs` walks every view and overlay at six screen sizes and fails on anything
+  unreachable or on a window taller than the display.
 
 ## 0.2.0 — 2026-09-18
 

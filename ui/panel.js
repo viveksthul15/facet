@@ -127,9 +127,11 @@ function viewPopulated() {
         'set the path manually'),
       '.',
     ),
-    state.adoptable && renderAdoptBanner(),
-    el('div', { class: 'lane-list', role: 'listbox' },
-      ...state.profiles.map((p, i) => renderLaneRow(p, i)),
+    el('div', { class: 'panel-body' },
+      state.adoptable && renderAdoptBanner(),
+      el('div', { class: 'lane-list', role: 'listbox' },
+        ...state.profiles.map((p, i) => renderLaneRow(p, i)),
+      ),
     ),
     el('div', { class: 'divider' }),
     el('div', { class: 'panel-foot' },
@@ -196,17 +198,17 @@ function viewEmpty() {
         'set the path manually'),
       '.',
     ),
-    el('div', { class: 'empty' },
-      el('div', { class: 'empty-hero' }, el('i'), el('i'), el('i')),
-      el('h3', {}, 'No profiles yet'),
-      el('p', {}, 'Each profile runs Claude Desktop against its own data directory. Sign in once per profile — sessions stay put.'),
-    ),
-    state.adoptable && renderAdoptBanner(),
-    el('div', { class: 'empty' },
-      el('div', { class: 'empty-actions' },
-        el('button', { class: 'btn-primary', onclick: () => setView('add') },
-          ICONS.plus(), 'Create a new profile'),
+    el('div', { class: 'panel-body' },
+      el('div', { class: 'empty' },
+        el('div', { class: 'empty-hero' }, el('i'), el('i'), el('i')),
+        el('h3', {}, 'No profiles yet'),
+        el('p', {}, 'Each profile runs Claude Desktop against its own data directory. Sign in once per profile — sessions stay put.'),
       ),
+      state.adoptable && renderAdoptBanner(),
+    ),
+    el('div', { class: 'empty-cta' },
+      el('button', { class: 'btn-primary', onclick: () => setView('add') },
+        ICONS.plus(), 'Create a new profile'),
     ),
   );
 }
@@ -235,7 +237,7 @@ function renderAdoptBanner() {
     ),
     state.adopt.error && el('div', { class: 'error' }, state.adopt.error),
     el('div', { class: 'adopt-actions' },
-      el('button', { class: 'btn-mini primary', onclick: onAdopt }, 'Adopt without re-login'),
+      el('button', { class: 'btn-mini primary', onclick: onAdopt }, 'Adopt this session'),
       el('button', { class: 'btn-mini ghost', onclick: () => { state.adoptable = false; render(); } }, 'Skip'),
     ),
   );
@@ -1139,6 +1141,10 @@ function render() {
         try { next.setSelectionRange(focusedSelStart, focusedSelEnd ?? focusedSelStart); } catch {}
       }
     }
+  }
+  // a card that scrolls gets a divider above its buttons, so it is obvious there is more above
+  for (const card of root.querySelectorAll('.confirm-card')) {
+    card.classList.toggle('is-scrollable', card.scrollHeight > card.clientHeight + 1);
   }
   fitPanelHeight();
 }
