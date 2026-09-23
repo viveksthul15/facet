@@ -10,6 +10,14 @@
   rest of the stylesheet is unchanged.
 
 ### Fixed
+- **A click did nothing after Claude updated itself, and the profile kept a green dot.** The
+  Microsoft Store build lives in a folder named after its version, so every update moves it.
+  Facet remembered the old path for as long as it had been running, tried to start a file that no
+  longer existed, and the failure arrived as an uncaught error — no window, no message, and the
+  profile stayed marked as running because it was marked before the process existed. Facet now
+  re-checks the path before each launch, re-detects Claude when it has moved, marks a profile as
+  running only once the process actually starts, and shows a real message if it still cannot start
+  Claude. Covered by `bench/verify-relaunch.mjs`.
 - **Adopting an existing Claude session could open a signed-out window.** Facet offered adoption
   whenever `%APPDATA%\Claude` existed, even when that folder held no session — which happens with
   the Microsoft Store build on machines where Windows has not linked that path to the package's

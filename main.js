@@ -251,6 +251,12 @@ function rememberMsix(exe) {
   } catch (e) { log('warn', 'claude-exe cache write failed', e.message); }
 }
 
+function forgetClaudeExe() {
+  claudeExeCache = { done: false, path: null, source: null };
+  msixKnown = undefined;
+  try { fs.rmSync(CLAUDE_EXE_CACHE_JSON, { force: true }); } catch {}
+}
+
 function msixExeFromOutput(stdout) {
   const out = String(stdout || '').trim();
   if (!out) return null;
@@ -383,7 +389,14 @@ function profileDir(profile) {
   return path.join(PROFILE_ROOT, 'profiles', profile.slug);
 }
 
-function launchProfile(profile) {
+function launchProfile(profile, retried = false) {
+  // A Microsoft Store update moves Claude — its folder carries the version number — so a path
+  // that was right when Facet started can be gone by the time you click. Re-check it here, or
+  // the spawn fails with ENOENT while the profile shows as running.
+  if (claudeExeCache.done && claudeExeCache.path && !fs.existsSync(claudeExeCache.path)) {
+    log('info', 'claude moved, re-detecting', claudeExeCache.path);
+    forgetClaudeExe();
+  }
   const exe = findClaudeExe();
   if (!exe) {
     log('warn', 'launch failed: claude not found', profile.name);
@@ -405,12 +418,37 @@ function launchProfile(profile) {
       detached: true, stdio: 'ignore', windowsHide: false,
     });
     child.unref();
-    running.add(profile.id);
+    // 'spawn' fires only once the process really exists, so a profile is never shown as running
+    // because of a launch that failed.
+    child.on('spawn', () => {
+      running.add(profile.id);
+      broadcastRunning();
+    });
     child.on('exit', () => {
       running.delete(profile.id);
       broadcastRunning();
     });
-    broadcastRunning();
+    // spawn reports failure asynchronously; without this listener it became an uncaught exception
+    // and the click did nothing at all.
+    child.on('error', (e) => {
+      running.delete(profile.id);
+      broadcastRunning();
+      log('error', 'launch failed', { name: profile.name, code: e.code, message: e.message });
+      if (e.code === 'ENOENT' && !retried) {
+        forgetClaudeExe();
+        const again = launchProfile(profile, true);
+        if (again.ok) return;
+      }
+      dialog.showErrorBox('Claude Desktop did not start',
+        `Facet tried to run:
+${exe}
+
+${e.message}
+
+` +
+        'If Claude Desktop updated or was reinstalled, open Facet → Settings to check the path, ' +
+        'or start Claude once from the Start menu and try again.');
+    });
     log('info', 'launched', { id: profile.id, name: profile.name, adopted: !!profile.adopted, dir: profile.adopted ? `${dir} (Claude default)` : dir });
     return { ok: true };
   } catch (e) {
