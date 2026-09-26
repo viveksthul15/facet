@@ -14,6 +14,12 @@ Inspired by [synthetixis/lanes](https://github.com/synthetixis/lanes) (macOS); r
 
 **[⬇ Facet-Portable.exe](https://github.com/viveksthul15/facet/releases/latest/download/Facet-Portable.exe)** — portable, no install
 
+Or from the command line:
+
+```
+winget install VivekSthul.Facet
+```
+
 > **First launch — SmartScreen warning:** Windows shows *"Windows protected your PC"* because Facet is not code-signed (that would cost me $100/year for a certificate). Click **More info → Run anyway**. The source is right here — read it, build it yourself, or trust that others have.
 
 ---
@@ -162,6 +168,10 @@ Unofficial personal-productivity utility. Not affiliated with, endorsed by, or s
 
 Running multiple accounts may be subject to your plan's terms — check them, especially on Team or Enterprise plans.
 
+## Privacy
+
+Nothing is collected and nothing is sent — see [PRIVACY.md](PRIVACY.md).
+
 ## License
 
-MIT.
+MIT — see [LICENSE](LICENSE). Releasing: [RELEASING.md](RELEASING.md).

@@ -1,0 +1,80 @@
+name: Build
+
+# Builds the Windows installer and portable exe on a clean runner. A tag makes it a release;
+# anything else just leaves the artifacts to download from the run.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Create a draft GitHub release from this build'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # The tag must match the version in package.json, or the release assets and the winget
+      # manifest end up naming different builds.
+      - name: Check the tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $pkg = (Get-Content package.json | ConvertFrom-Json).version
+          $tag = '${{ github.ref_name }}'.TrimStart('v')
+          if ($pkg -ne $tag) { throw "package.json is $pkg but the tag is $tag" }
+
+      - name: Build
+        run: npm run build
+
+      - name: Checksums
+        shell: pwsh
+        run: |
+          Get-FileHash dist\Facet-*-${{ github.ref_name || '' }}*.exe -Algorithm SHA256 -EA SilentlyContinue | Out-Null
+          $files = Get-ChildItem dist\*.exe
+          $lines = $files | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" }
+          $lines | Set-Content dist\SHA256SUMS.txt -Encoding ascii
+          Get-Content dist\SHA256SUMS.txt
+
+      # A packaged build that cannot start is worth catching before anyone downloads it.
+      - name: Smoke-test the packaged app
+        shell: pwsh
+        run: node bench/verify-smoke.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: facet-windows
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/SHA256SUMS.txt
+            dist/latest.yml
+          retention-days: 14
+
+      - name: Draft release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          if (-not $tag.StartsWith('v')) { $tag = "v$((Get-Content package.json | ConvertFrom-Json).version)" }
+          $notes = "See CHANGELOG.md for what changed. Checksums are in SHA256SUMS.txt."
+          # Unversioned copies keep releases/latest/download/Facet-Setup.exe working.
+          Copy-Item (Get-ChildItem dist\Facet-Setup-*.exe | Select-Object -First 1) dist\Facet-Setup.exe
+          Copy-Item (Get-ChildItem dist\Facet-Portable-*.exe | Select-Object -First 1) dist\Facet-Portable.exe
+          gh release create $tag --draft --title "Facet $($tag.TrimStart('v'))" --notes $notes (Get-ChildItem dist\*.exe, dist\SHA256SUMS.txt, dist\latest.yml | ForEach-Object { $_.FullName })

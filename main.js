@@ -561,7 +561,16 @@ function createPanel() {
       sandbox: true,
     },
   });
-  panel.loadFile(path.join(__dirname, 'ui', 'panel.html'));
+  panel.loadFile(path.join(__dirname, 'ui', 'panel.html'))
+    .catch((e) => reportStartupFailure('Loading the panel', e));
+  panel.webContents.on('did-fail-load', (_e, code, desc) => {
+    if (code === -3) return; // aborted, e.g. a reload that superseded this one
+    reportStartupFailure('Loading the panel', new Error(`${desc} (${code})`));
+  });
+  panel.webContents.on('render-process-gone', (_e, details) => {
+    log('error', 'panel process gone', details);
+    if (details.reason !== 'clean-exit') panel.reload();   // once; a second failure surfaces above
+  });
   panel.on('blur', () => {
     // Don't auto-hide while a native OS dialog (file picker, confirm) is up —
     // otherwise focus stealing collapses the panel behind the dialog.
@@ -695,18 +704,54 @@ app.on('second-instance', () => {
   if (panel) togglePanel(tray && tray.getBounds());
 });
 
+// Facet has no window of its own until you click the tray icon, so a failure during startup is
+// invisible: the process runs, nothing appears, and there is nothing to report. Anything that goes
+// wrong here is written to startup.log and shown once.
+let startupFailed = false;
+
+function reportStartupFailure(stage, err) {
+  if (startupFailed) return;
+  startupFailed = true;
+  const detail = err && (err.stack || err.message) || String(err);
+  log('error', 'startup failed', { stage, detail });
+  try {
+    fs.mkdirSync(PROFILE_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(PROFILE_ROOT, 'startup.log'),
+      `${new Date().toISOString()}  Facet ${app.getVersion()}  stage=${stage}
+${detail}
+`);
+  } catch {}
+  try {
+    dialog.showErrorBox('Facet could not start',
+      `${stage} failed.
+
+${detail}
+
+Details were written to:
+${path.join(PROFILE_ROOT, 'startup.log')}`);
+  } catch {}
+}
+
 app.whenReady().then(() => {
-  ensureRoot();
-  log('info', 'Facet starting', { portable: IS_PORTABLE, root: PROFILE_ROOT });
-  const image = createTrayIcon();
-  tray = new Tray(image);
-  tray.setToolTip('Facet — Claude profiles');
-  tray.setContextMenu(buildContextMenu());
-  createPanel();
-  tray.on('click', () => togglePanel(tray.getBounds()));
-  syncLaunchAtLogin();
-  syncGlobalHotkey();
-});
+  try {
+    ensureRoot();
+    log('info', 'Facet starting', { portable: IS_PORTABLE, root: PROFILE_ROOT });
+  } catch (e) { return reportStartupFailure('Preparing the data folder', e); }
+
+  try {
+    const image = createTrayIcon();
+    tray = new Tray(image);
+    tray.setToolTip('Facet — Claude profiles');
+    tray.setContextMenu(buildContextMenu());
+    tray.on('click', () => togglePanel(tray.getBounds()));
+  } catch (e) { return reportStartupFailure('Creating the tray icon', e); }
+
+  try { createPanel(); } catch (e) { return reportStartupFailure('Creating the panel window', e); }
+
+  // Neither of these stops Facet working, so they only get logged.
+  try { syncLaunchAtLogin(); } catch (e) { log('warn', 'launch-at-login failed', e.message); }
+  try { syncGlobalHotkey(); } catch (e) { log('warn', 'global hotkey failed', e.message); }
+}).catch((e) => reportStartupFailure('Starting up', e));
 
 app.on('window-all-closed', (e) => { if (!isQuitting) e.preventDefault(); });
 app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
