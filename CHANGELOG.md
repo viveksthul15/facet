@@ -9,6 +9,15 @@
   come from the same families. Facet's own token names are kept as a thin mapping layer, so the
   rest of the stylesheet is unchanged.
 
+### Added
+- **Links from the web can go to the profile you choose.** Clicking "Open desktop app" on
+  claude.ai always opened the same account, because Windows registers one `claude://` handler and
+  it names no profile — and the link itself carries no account either. Turn on *Settings → Links
+  from the web* and Facet handles `claude://` instead: it shows your profiles, you pick one, and
+  the link is passed to that profile's Claude. Off by default. Facet remembers what held the
+  association before and puts it back when you turn it off, and reclaims it at startup when a
+  Claude update takes it back. Covered by `bench/verify-links.mjs`.
+
 ### Fixed
 - **A click did nothing after Claude updated itself, and the profile kept a green dot.** The
   Microsoft Store build lives in a folder named after its version, so every update moves it.

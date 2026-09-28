@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('facet', {
   listSessions: () => ipcRenderer.invoke('sessions:list'),
   exportSession: (payload) => ipcRenderer.invoke('sessions:export', payload),
   revealPath: (pathToShow) => ipcRenderer.invoke('sessions:reveal', { pathToShow }),
+  pendingLink: () => ipcRenderer.invoke('links:pending'),
+  openLink: (payload) => ipcRenderer.invoke('links:open', payload),
+  cancelLink: () => ipcRenderer.invoke('links:cancel'),
+  linkStatus: () => ipcRenderer.invoke('links:status'),
   hide: () => ipcRenderer.invoke('panel:hide'),
   resize: (payload) => ipcRenderer.invoke('panel:resize', payload),
   openPath: (pathToOpen) => ipcRenderer.invoke('shell:open', { pathToOpen }),
@@ -32,4 +36,5 @@ contextBridge.exposeInMainWorld('facet', {
   onStartRename: (cb) => ipcRenderer.on('start-rename', (_e, payload) => cb(payload)),
   onStartRemove: (cb) => ipcRenderer.on('start-remove', (_e, payload) => cb(payload)),
   onRefresh: (cb) => ipcRenderer.on('refresh', () => cb()),
+  onOpenLink: (cb) => ipcRenderer.on('open-link', (_e, payload) => cb(payload)),
 });

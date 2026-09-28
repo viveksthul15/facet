@@ -18,6 +18,7 @@ const state = {
   orphanCount: 0,
   adopt: { name: 'Personal', color: 'emerald', error: '' },
   rename: { id: null, value: '' },
+  link: null,          // a claude:// link waiting for a profile to open it in
   hotkeyRecording: false,
   confirm: null,
   onboarding: false,
@@ -417,6 +418,66 @@ function renderManageRow(p, i) {
   );
 }
 
+
+// A claude:// link (for example "Open desktop app" after connecting something on the web) names no
+// account, so Facet cannot know which profile it belongs to — it asks.
+function viewLink() {
+  const url = state.link || '';
+  // claude:// is not a scheme URL() gives a host for, so the readable part is taken by hand:
+  // "claude://claude.ai/new?mcp_auth_source=…" -> "claude.ai/new"
+  const pretty = url.replace(/^[a-z]+:\/\//i, '').split('?')[0].replace(/\/$/, '') || url;
+  const why = /mcp_auth_source/.test(url) ? 'Finishing a connector setup.'
+    : /step=success/.test(url) ? 'Finishing a sign-in.' : '';
+  return el('div', { class: 'panel' },
+    el('div', { class: 'panel-head' },
+      el('div', { class: 'panel-title' }, brandMark(), 'Open link in…'),
+      el('div', { class: 'panel-head-tools' },
+        el('button', { class: 'icon-btn', title: 'Cancel (Esc)', onclick: onCancelLink }, ICONS.close()),
+      ),
+    ),
+    el('div', { class: 'link-summary' },
+      el('div', { class: 'link-what' }, why ? `${why} Which profile is it for?` : 'A link from the web wants to open Claude Desktop.'),
+      el('div', { class: 'link-url', title: url }, pretty),
+    ),
+    el('div', { class: 'panel-body' },
+      el('div', { class: 'lane-list', role: 'listbox' },
+        ...state.profiles.map((p, i) => el('div', {
+          class: 'lane', style: laneVar(p.color), role: 'option', tabindex: '0',
+          onclick: () => onOpenLinkIn(p),
+          onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenLinkIn(p); } },
+        },
+          el('span', { class: 'bar' }),
+          el('div', { class: 'lane-body' },
+            el('div', { class: 'name' }, p.name,
+              state.running.has(p.id) && el('span', { class: 'status-dot', 'aria-label': 'running' })),
+            el('div', { class: 'sub' }, state.running.has(p.id) ? 'running' : shortSub(p)),
+          ),
+          el('div', { class: 'lane-tail' }, i < 9 && el('span', { class: 'kbd' }, `Alt ${i + 1}`)),
+        )),
+      ),
+    ),
+    el('div', { class: 'empty-cta' },
+      el('button', { class: 'btn-secondary', onclick: onCancelLink }, 'Cancel'),
+    ),
+  );
+}
+
+async function onOpenLinkIn(p) {
+  const url = state.link;
+  state.link = null;
+  const r = await api.openLink({ id: p.id, url });
+  if (!r || !r.ok) { state.link = url; render(); return; }
+  setView(state.profiles.length ? 'populated' : 'empty');
+  setTimeout(() => api.hide(), 120);
+}
+
+async function onCancelLink() {
+  state.link = null;
+  await api.cancelLink();
+  setView(state.profiles.length ? 'populated' : 'empty');
+  api.hide();
+}
+
 function viewSettings() {
   const isLocked = (k) => state.lockedSettings.includes(k);
   const sourceLabel = ({
@@ -476,6 +537,16 @@ function viewSettings() {
       renderSettingsSection('Behavior', [
         renderToggle('Confirm on quit if profiles are running',
           'confirmOnQuit', state.settings.confirmOnQuit, isLocked('confirmOnQuit')),
+      ]),
+      renderSettingsSection('Links from the web', [
+        renderToggle('Ask which profile to open claude:// links in',
+          'handleClaudeLinks', state.settings.handleClaudeLinks, isLocked('handleClaudeLinks')),
+        el('div', { class: 'hint' },
+          'Without this, "Open desktop app" on the web always opens the same account — whichever ',
+          'one Claude itself is registered for. Facet takes the link over and asks. Switching it ',
+          'off puts the original setting back.'),
+        state.settings.handleClaudeLinks && !state.linkHandling && el('div', { class: 'hint' },
+          el('b', {}, 'Claude has taken the link back. '), 'Facet reclaims it the next time it starts.'),
       ]),
       renderSettingsSection('Data & profiles', [
         el('div', { class: 'settings-current' },
@@ -720,6 +791,7 @@ async function refresh() {
   state.lockedSettings = data.lockedSettings || [];
   state.portable = !!data.portable;
   state.version = data.version || '';
+  if (state.view === 'settings') api.linkStatus().then((s) => { state.linkHandling = !!(s && s.handling); }).catch(() => {});
   state.orphanCount = data.orphanCount || 0;
   // Onboarding: show once if user has never seen it and no profiles yet
   if (state.settings && state.settings.onboardingComplete === false && state.profiles.length === 0) {
@@ -1112,7 +1184,7 @@ function log(msg) { console.log('[facet]', msg); }
 const views = {
   populated: viewPopulated, empty: viewEmpty, add: viewAdd,
   manage: viewManage, settings: viewSettings, recovery: viewRecovery,
-  sessions: viewSessions,
+  sessions: viewSessions, link: viewLink,
 };
 const root = document.getElementById('root');
 
@@ -1181,6 +1253,7 @@ function renderInline() {
 document.addEventListener('keydown', (e) => {
   if (state.hotkeyRecording) return; // recorder owns keys
   if (e.key === 'Escape') {
+    if (state.link) { onCancelLink(); return; }
     if (state.confirm) { state.confirm = null; render(); return; }
     if (state.rename.id) { cancelRename(); return; }
     if (state.view !== 'populated' && state.profiles.length) { setView('populated'); return; }
@@ -1189,7 +1262,9 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.altKey && /^[1-9]$/.test(e.key)) {
     const idx = Number(e.key) - 1;
-    if (state.profiles[idx]) { e.preventDefault(); onLaunch(state.profiles[idx]); }
+    if (!state.profiles[idx]) return;
+    e.preventDefault();
+    if (state.link) onOpenLinkIn(state.profiles[idx]); else onLaunch(state.profiles[idx]);
   }
 });
 
@@ -1207,9 +1282,13 @@ api.onStartRemove(({ id }) => {
   askRemove(p);
 });
 api.onRefresh(async () => { await refresh(); render(); });
+api.onOpenLink(({ url }) => { state.link = url; setView('link'); });
 
 (async () => {
   await refresh();
   if (state.profiles.length === 0) state.view = 'empty';
+  // Windows may have started Facet to open a link before this panel existed.
+  const pending = await api.pendingLink().catch(() => null);
+  if (pending && pending.url && state.profiles.length) { state.link = pending.url; state.view = 'link'; }
   render();
 })();

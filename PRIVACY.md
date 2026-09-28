@@ -16,9 +16,13 @@ Facet collects nothing, sends nothing, and has no servers.
 | Settings | `%LOCALAPPDATA%\Facet\settings.json` |
 | Debug log (local only) | `%LOCALAPPDATA%\Facet\logs\YYYY-MM-DD.log` |
 | Where Claude Desktop was last found | `%LOCALAPPDATA%\Facet\cache\claude-exe.json` |
+| The previous `claude://` handler, if you turned that setting on | `%LOCALAPPDATA%\Facet\settings.json` |
 | Claude session data, written by Claude itself | `%LOCALAPPDATA%\Facet\profiles\claude-<name>\` |
 
 In portable mode all of it lives in `FacetData` next to the executable instead.
+
+A `claude://` link Facet opens is passed to Claude Desktop unchanged and is never logged in full,
+stored, or sent anywhere.
 
 ## What Facet never does
 

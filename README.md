@@ -119,6 +119,19 @@ node tools/session-export.mjs --list --all
 node tools/session-export.mjs <sessionId-prefix> --out my-export.zip
 ```
 
+## Links from the web
+
+Clicking **Open desktop app** on claude.ai opens whichever account Windows has registered
+`claude://` for — one handler, no profile in it, and the link itself names no account. So a link
+from your work account can land in your personal one.
+
+Turn on **Settings → Links from the web** and Facet handles those links instead: it lists your
+profiles, you pick one, and the link is handed to that profile's Claude.
+
+It is off by default, because it changes a Windows association. Facet saves whatever held it
+before and restores that when you switch it off. Claude re-registers the protocol when it updates,
+so Facet claims it again the next time it starts.
+
 ## Keyboard
 
 - **Ctrl + Alt + C** (default global hotkey) — open the panel from anywhere; re-bindable in Settings

@@ -55,12 +55,26 @@ const CLAUDE_EXE_CANDIDATES = [
   path.join(process.env.LOCALAPPDATA || '', 'AnthropicClaude', 'claude.exe'),
 ];
 
+// ============================================================================
+// claude:// links
+//
+// Clicking "Open desktop app" on the web opens whatever Windows has registered for claude://,
+// which is one Claude.exe with no --user-data-dir — so the link lands in the default data
+// directory, whatever account that happens to hold. The link itself names no account (it is a
+// path and a few query parameters), so the only way to get it to the right profile is to ask.
+// With the setting below on, Facet registers itself for claude:// and forwards the link to the
+// profile you pick.
+// ============================================================================
+const LINK_PROTOCOL = 'claude';
+const LINK_KEY = `HKCU\\Software\\Classes\\${LINK_PROTOCOL}`;
+
 const DEFAULT_SETTINGS = {
   customClaudePath: null,
   launchAtLogin: false,
   globalHotkey: 'Control+Alt+C',
   confirmOnQuit: true,
   onboardingComplete: false,
+  handleClaudeLinks: false,
 };
 
 let tray = null;
@@ -217,6 +231,103 @@ function getEffectiveSettings() {
 
 // Public "settings" for consumers — returns effective view
 function loadSettings() { return getEffectiveSettings().effective; }
+
+// ============================================================================
+// Registry helpers — only ever used under HKCU\Software\Classes\claude
+// ============================================================================
+function regQuery(key, valueName) {
+  try {
+    const args = ['query', key, ...(valueName ? ['/v', valueName] : ['/ve'])];
+    const out = execFileSync('reg.exe', args, { encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+    const m = out.match(/REG_[A-Z_]+\s+(.*)/);
+    return m ? m[1].trim() : null;
+  } catch { return null; }   // the key does not exist
+}
+
+function regSet(key, valueName, data) {
+  const args = ['add', key, ...(valueName ? ['/v', valueName] : ['/ve']), '/t', 'REG_SZ', '/d', data, '/f'];
+  execFileSync('reg.exe', args, { windowsHide: true, stdio: 'ignore' });
+}
+
+/** What Windows should run for a claude:// link while Facet is handling them. */
+function facetLinkCommand() {
+  return `"${process.execPath}"${IS_PORTABLE ? ' --portable' : ''} "%1"`;
+}
+
+const currentLinkCommand = () => regQuery(`${LINK_KEY}\\shell\\open\\command`);
+
+function facetHandlesLinks() {
+  const cur = currentLinkCommand();
+  return !!cur && cur.toLowerCase().includes(process.execPath.toLowerCase());
+}
+
+/**
+ * Take over claude:// for Facet, remembering whoever held it before (normally Claude itself) so it
+ * can be put back. Claude re-registers the protocol when it updates, so this also runs at startup
+ * while the setting is on.
+ */
+function claimClaudeLinks() {
+  try {
+    const before = currentLinkCommand();
+    if (before && !before.toLowerCase().includes(process.execPath.toLowerCase())) {
+      const user = loadUserSettings();
+      user.claudeLinkBackup = before;             // only the first, real owner is kept
+      saveUserSettings(user);
+    }
+    regSet(LINK_KEY, null, `URL:${LINK_PROTOCOL}`);
+    regSet(LINK_KEY, 'URL Protocol', '');
+    regSet(`${LINK_KEY}\\shell\\open\\command`, null, facetLinkCommand());
+    log('info', 'claude:// links now open through Facet');
+    return { ok: true };
+  } catch (e) {
+    log('error', 'could not register claude:// links', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
+/** Hand claude:// back to whatever had it before Facet took over. */
+function releaseClaudeLinks() {
+  try {
+    const backup = loadUserSettings().claudeLinkBackup;
+    if (backup) {
+      regSet(`${LINK_KEY}\\shell\\open\\command`, null, backup);
+      log('info', 'claude:// links handed back', backup);
+    } else {
+      try { execFileSync('reg.exe', ['delete', LINK_KEY, '/f'], { windowsHide: true, stdio: 'ignore' }); } catch {}
+      log('info', 'claude:// registration removed');
+    }
+    const user = loadUserSettings();
+    delete user.claudeLinkBackup;
+    saveUserSettings(user);
+    return { ok: true };
+  } catch (e) {
+    log('error', 'could not restore claude:// links', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
+function syncClaudeLinks() {
+  if (process.platform !== 'win32') return;
+  const on = !!loadSettings().handleClaudeLinks;
+  if (on && !facetHandlesLinks()) claimClaudeLinks();      // Claude takes it back on every update
+  else if (!on && facetHandlesLinks()) releaseClaudeLinks();
+}
+
+// A link can arrive before the panel exists — Windows starts Facet to handle it — so it waits here.
+let pendingLink = null;
+
+const linkFromArgv = (argv) => (argv || []).find((a) => typeof a === 'string' && a.startsWith(`${LINK_PROTOCOL}://`)) || null;
+
+function offerLink(url) {
+  if (!url) return;
+  pendingLink = url;
+  log('info', 'claude:// link received', url.slice(0, 120));
+  if (!panel || panel.isDestroyed()) return;              // picked up once the panel has loaded
+  panel.webContents.send('open-link', { url });
+  positionPanel(tray && tray.getBounds());
+  panel.show();
+  panel.focus();
+}
 
 // ============================================================================
 // Claude.exe detection with a small cache + health check
@@ -389,7 +500,7 @@ function profileDir(profile) {
   return path.join(PROFILE_ROOT, 'profiles', profile.slug);
 }
 
-function launchProfile(profile, retried = false) {
+function launchProfile(profile, retried = false, extraArgs = []) {
   // A Microsoft Store update moves Claude — its folder carries the version number — so a path
   // that was right when Facet started can be gone by the time you click. Re-check it here, or
   // the spawn fails with ENOENT while the profile shows as running.
@@ -412,7 +523,7 @@ function launchProfile(profile, retried = false) {
   // An adopted profile IS Claude's own session, so it launches the way Claude launches itself.
   // Naming the directory explicitly is what broke the Store build on a machine without the
   // %APPDATA%\Claude link: the path existed, held no session, and Claude opened signed out.
-  const args = profile.adopted ? [] : [`--user-data-dir=${dir}`];
+  const args = [...(profile.adopted ? [] : [`--user-data-dir=${dir}`]), ...extraArgs];
   try {
     const child = spawn(exe, args, {
       detached: true, stdio: 'ignore', windowsHide: false,
@@ -436,7 +547,7 @@ function launchProfile(profile, retried = false) {
       log('error', 'launch failed', { name: profile.name, code: e.code, message: e.message });
       if (e.code === 'ENOENT' && !retried) {
         forgetClaudeExe();
-        const again = launchProfile(profile, true);
+        const again = launchProfile(profile, true, extraArgs);
         if (again.ok) return;
       }
       dialog.showErrorBox('Claude Desktop did not start',
@@ -449,7 +560,9 @@ ${e.message}
         'If Claude Desktop updated or was reinstalled, open Facet → Settings to check the path, ' +
         'or start Claude once from the Start menu and try again.');
     });
-    log('info', 'launched', { id: profile.id, name: profile.name, adopted: !!profile.adopted, dir: profile.adopted ? `${dir} (Claude default)` : dir });
+    const link = extraArgs.find((a) => typeof a === 'string' && a.startsWith(`${LINK_PROTOCOL}://`));
+    log('info', 'launched', { id: profile.id, name: profile.name, adopted: !!profile.adopted,
+      dir: profile.adopted ? `${dir} (Claude default)` : dir, ...(link ? { link: link.slice(0, 120) } : {}) });
     return { ok: true };
   } catch (e) {
     log('error', 'spawn failed', e.message);
@@ -561,6 +674,7 @@ function createPanel() {
       sandbox: true,
     },
   });
+  panel.webContents.on('did-finish-load', () => { if (pendingLink) offerLink(pendingLink); });
   panel.loadFile(path.join(__dirname, 'ui', 'panel.html'))
     .catch((e) => reportStartupFailure('Loading the panel', e));
   panel.webContents.on('did-fail-load', (_e, code, desc) => {
@@ -700,7 +814,9 @@ function attemptQuit() {
 // ============================================================================
 // App lifecycle
 // ============================================================================
-app.on('second-instance', () => {
+app.on('second-instance', (_e, argv) => {
+  const url = linkFromArgv(argv);
+  if (url) return offerLink(url);
   if (panel) togglePanel(tray && tray.getBounds());
 });
 
@@ -748,9 +864,12 @@ app.whenReady().then(() => {
 
   try { createPanel(); } catch (e) { return reportStartupFailure('Creating the panel window', e); }
 
-  // Neither of these stops Facet working, so they only get logged.
+  // None of these stop Facet working, so they only get logged.
   try { syncLaunchAtLogin(); } catch (e) { log('warn', 'launch-at-login failed', e.message); }
   try { syncGlobalHotkey(); } catch (e) { log('warn', 'global hotkey failed', e.message); }
+  try { syncClaudeLinks(); } catch (e) { log('warn', 'claude:// sync failed', e.message); }
+  // Windows may have started Facet only to open a link.
+  try { offerLink(linkFromArgv(process.argv)); } catch (e) { log('warn', 'link handling failed', e.message); }
 }).catch((e) => reportStartupFailure('Starting up', e));
 
 app.on('window-all-closed', (e) => { if (!isQuitting) e.preventDefault(); });
@@ -799,6 +918,7 @@ ipcMain.handle('settings:set', (_e, patch) => {
   invalidateClaudeExeCache();
   if ('launchAtLogin' in patch) syncLaunchAtLogin();
   if ('globalHotkey' in patch) syncGlobalHotkey();
+  if ('handleClaudeLinks' in patch) syncClaudeLinks();
   const { effective, locked } = getEffectiveSettings();
   return { settings: effective, locked };
 });
@@ -1147,6 +1267,20 @@ ipcMain.handle('sessions:export', async (_e, { id, logsProfileId, keepLargeTasks
 });
 
 ipcMain.handle('sessions:reveal', (_e, { pathToShow }) => shell.showItemInFolder(pathToShow));
+
+// The picker asks for a link that arrived before the panel was listening.
+ipcMain.handle('links:pending', () => ({ url: pendingLink }));
+
+ipcMain.handle('links:open', (_e, { id, url }) => {
+  const p = loadProfiles().find((x) => x.id === id);
+  if (!p) return { ok: false, error: 'not-found' };
+  pendingLink = null;
+  return launchProfile(p, false, [url]);
+});
+
+ipcMain.handle('links:cancel', () => { pendingLink = null; return { ok: true }; });
+
+ipcMain.handle('links:status', () => ({ handling: facetHandlesLinks(), command: currentLinkCommand() }));
 
 ipcMain.handle('panel:hide', () => { if (panel) panel.hide(); });
 
