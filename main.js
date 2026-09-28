@@ -67,6 +67,14 @@ const CLAUDE_EXE_CANDIDATES = [
 // ============================================================================
 const LINK_PROTOCOL = 'claude';
 const LINK_KEY = `HKCU\\Software\\Classes\\${LINK_PROTOCOL}`;
+// Claude Desktop from the Store claims claude:// in its package manifest (windows.protocol), and
+// Windows honours an app-identity claim over a plain registry command — so writing that key is not
+// enough on its own. What does outrank it is the user's own choice in Windows Settings, and that
+// can only be set by a person, by design. Facet therefore registers itself the way Windows expects
+// a candidate handler to be registered, and points you at the one screen where you pick it.
+const LINK_PROGID = 'Facet.ClaudeLink';
+const LINK_PROGID_KEY = `HKCU\\Software\\Classes\\${LINK_PROGID}`;
+const LINK_CAPABILITIES_KEY = 'HKCU\\Software\\Facet\\Capabilities';
 
 const DEFAULT_SETTINGS = {
   customClaudePath: null,
@@ -266,6 +274,8 @@ function facetHandlesLinks() {
  * can be put back. Claude re-registers the protocol when it updates, so this also runs at startup
  * while the setting is on.
  */
+let lastLinkOwnerLogged = null;
+
 function claimClaudeLinks() {
   try {
     const before = currentLinkCommand();
@@ -277,12 +287,56 @@ function claimClaudeLinks() {
     regSet(LINK_KEY, null, `URL:${LINK_PROTOCOL}`);
     regSet(LINK_KEY, 'URL Protocol', '');
     regSet(`${LINK_KEY}\\shell\\open\\command`, null, facetLinkCommand());
-    log('info', 'claude:// links now open through Facet');
+    if (before !== lastLinkOwnerLogged) {
+      lastLinkOwnerLogged = before;
+      log('info', 'claude:// links now open through Facet', { takenFrom: (before || 'nothing').slice(0, 80) });
+    }
     return { ok: true };
   } catch (e) {
     log('error', 'could not register claude:// links', e.message);
     return { ok: false, error: e.message };
   }
+}
+
+/**
+ * Register Facet as a candidate handler for claude:// links, so it appears in
+ * Settings → Apps → Default apps → Choose defaults by link type. Writing these keys changes
+ * nothing on its own: Windows only switches over when you pick Facet on that screen.
+ */
+function registerLinkCapability() {
+  try {
+    regSet(LINK_PROGID_KEY, null, 'Claude link');
+    regSet(`${LINK_PROGID_KEY}\\shell\\open\\command`, null, facetLinkCommand());
+    regSet(`${LINK_PROGID_KEY}\\DefaultIcon`, null, `"${process.execPath}",0`);
+    regSet(LINK_CAPABILITIES_KEY, 'ApplicationName', 'Facet');
+    regSet(LINK_CAPABILITIES_KEY, 'ApplicationDescription', 'Opens Claude links in the profile you choose');
+    regSet(`${LINK_CAPABILITIES_KEY}\\UrlAssociations`, LINK_PROTOCOL, LINK_PROGID);
+    regSet('HKCU\\Software\\RegisteredApplications', 'Facet', 'Software\\Facet\\Capabilities');
+    return { ok: true };
+  } catch (e) {
+    log('warn', 'could not register as a link handler', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
+function unregisterLinkCapability() {
+  for (const args of [['delete', LINK_PROGID_KEY, '/f'],
+                      ['delete', 'HKCU\\Software\\Facet', '/f'],
+                      ['delete', 'HKCU\\Software\\RegisteredApplications', '/v', 'Facet', '/f']]) {
+    try { execFileSync('reg.exe', args, { windowsHide: true, stdio: 'ignore' }); } catch {}
+  }
+}
+
+/** Is Facet the handler Windows will actually use — the user's own choice, or the plain key? */
+function linkHandlerState() {
+  const choice = regQuery(
+    `HKCU\\Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\${LINK_PROTOCOL}\\UserChoice`, 'ProgId');
+  return {
+    userChoice: choice,                       // null when Windows has never been told
+    userChoiceIsFacet: choice === LINK_PROGID,
+    commandIsFacet: facetHandlesLinks(),
+    command: currentLinkCommand(),
+  };
 }
 
 /** Hand claude:// back to whatever had it before Facet took over. */
@@ -306,11 +360,46 @@ function releaseClaudeLinks() {
   }
 }
 
+// Claude Desktop re-registers claude:// for itself every time it starts — measured: set the key
+// to Facet, launch Claude, and twelve seconds later the key names Claude again. Claiming it once
+// is therefore useless; while the setting is on, Facet keeps an eye on the key and takes it back.
+let linkWatch = null;
+const LINK_WATCH_MS = 10 * 1000;
+
+function startLinkWatch() {
+  if (linkWatch) return;
+  linkWatch = setInterval(() => {
+    if (!loadSettings().handleClaudeLinks) return stopLinkWatch();
+    if (!facetHandlesLinks()) claimClaudeLinks();
+  }, LINK_WATCH_MS);
+  linkWatch.unref?.();
+}
+
+function stopLinkWatch() {
+  if (linkWatch) clearInterval(linkWatch);
+  linkWatch = null;
+}
+
+/** Claude writes the key during its own startup, so check again once it has settled. */
+function reclaimLinksAfterLaunch() {
+  if (!loadSettings().handleClaudeLinks) return;
+  for (const delay of [4000, 10000, 20000]) {
+    setTimeout(() => { if (loadSettings().handleClaudeLinks && !facetHandlesLinks()) claimClaudeLinks(); }, delay).unref?.();
+  }
+}
+
 function syncClaudeLinks() {
   if (process.platform !== 'win32') return;
   const on = !!loadSettings().handleClaudeLinks;
-  if (on && !facetHandlesLinks()) claimClaudeLinks();      // Claude takes it back on every update
-  else if (!on && facetHandlesLinks()) releaseClaudeLinks();
+  if (on) {
+    registerLinkCapability();     // so Facet can be picked in Windows Settings
+    if (!facetHandlesLinks()) claimClaudeLinks();   // enough on its own for non-Store Claude
+    startLinkWatch();
+  } else {
+    stopLinkWatch();
+    if (facetHandlesLinks()) releaseClaudeLinks();
+    unregisterLinkCapability();
+  }
 }
 
 // A link can arrive before the panel exists — Windows starts Facet to handle it — so it waits here.
@@ -534,6 +623,7 @@ function launchProfile(profile, retried = false, extraArgs = []) {
     child.on('spawn', () => {
       running.add(profile.id);
       broadcastRunning();
+      reclaimLinksAfterLaunch();
     });
     child.on('exit', () => {
       running.delete(profile.id);
@@ -873,7 +963,10 @@ app.whenReady().then(() => {
 }).catch((e) => reportStartupFailure('Starting up', e));
 
 app.on('window-all-closed', (e) => { if (!isQuitting) e.preventDefault(); });
-app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
+app.on('will-quit', () => {
+  try { globalShortcut.unregisterAll(); } catch {}
+  stopLinkWatch();
+});
 
 // ============================================================================
 // IPC — panel/renderer surface
@@ -1280,7 +1373,14 @@ ipcMain.handle('links:open', (_e, { id, url }) => {
 
 ipcMain.handle('links:cancel', () => { pendingLink = null; return { ok: true }; });
 
-ipcMain.handle('links:status', () => ({ handling: facetHandlesLinks(), command: currentLinkCommand() }));
+ipcMain.handle('links:status', () => linkHandlerState());
+
+// Windows only lets a person choose the default handler, so Facet can offer the screen, not the
+// switch. The protocol page cannot be deep-linked, so this opens the Default apps list.
+ipcMain.handle('links:openWindowsSettings', async () => {
+  await shell.openExternal('ms-settings:defaultapps');
+  return { ok: true };
+});
 
 ipcMain.handle('panel:hide', () => { if (panel) panel.hide(); });
 

@@ -128,9 +128,18 @@ from your work account can land in your personal one.
 Turn on **Settings → Links from the web** and Facet handles those links instead: it lists your
 profiles, you pick one, and the link is handed to that profile's Claude.
 
-It is off by default, because it changes a Windows association. Facet saves whatever held it
-before and restores that when you switch it off. Claude re-registers the protocol when it updates,
-so Facet claims it again the next time it starts.
+If Claude Desktop came from the Microsoft Store there is one extra step, and it is Windows'
+doing: a Store app claims `claude://` through its package, which beats anything another program
+can register, and only your own choice in Settings outranks that. So after switching it on:
+
+1. **Settings → Apps → Default apps** (the toggle has a button that opens it).
+2. Find **Facet**.
+3. Under *Choose defaults by link type*, set **CLAUDE** to Facet.
+
+With the classic (non-Store) Claude, no extra step is needed — and since Claude re-registers the
+protocol every time it starts, Facet keeps taking it back while the switch is on.
+
+Switching it off puts the original association back.
 
 ## Keyboard
 

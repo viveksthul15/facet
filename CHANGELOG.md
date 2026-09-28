@@ -14,9 +14,16 @@
   claude.ai always opened the same account, because Windows registers one `claude://` handler and
   it names no profile — and the link itself carries no account either. Turn on *Settings → Links
   from the web* and Facet handles `claude://` instead: it shows your profiles, you pick one, and
-  the link is passed to that profile's Claude. Off by default. Facet remembers what held the
-  association before and puts it back when you turn it off, and reclaims it at startup when a
-  Claude update takes it back. Covered by `bench/verify-links.mjs`.
+  the link is passed to that profile's Claude. Off by default.
+
+  Claude Desktop from the Microsoft Store claims `claude://` through its package manifest, and
+  Windows honours an app-identity claim over anything another program writes to the registry —
+  and it also rewrites the plain registration every time it starts (measured). So Facet registers
+  itself as a proper candidate handler and the switch tells you the one remaining step: pick Facet
+  for `claude` in Windows' *Default apps*, which only a person is allowed to do. With the classic
+  (non-Store) Claude, the registration alone is enough, and Facet keeps it if Claude takes it back.
+  Turning the switch off restores whatever held the association before. Covered by
+  `bench/verify-links.mjs`.
 
 ### Fixed
 - **A click did nothing after Claude updated itself, and the profile kept a green dot.** The

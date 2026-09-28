@@ -19,6 +19,7 @@ const state = {
   adopt: { name: 'Personal', color: 'emerald', error: '' },
   rename: { id: null, value: '' },
   link: null,          // a claude:// link waiting for a profile to open it in
+  linkState: null,     // how Windows currently routes claude:// links
   hotkeyRecording: false,
   confirm: null,
   onboarding: false,
@@ -543,10 +544,8 @@ function viewSettings() {
           'handleClaudeLinks', state.settings.handleClaudeLinks, isLocked('handleClaudeLinks')),
         el('div', { class: 'hint' },
           'Without this, "Open desktop app" on the web always opens the same account — whichever ',
-          'one Claude itself is registered for. Facet takes the link over and asks. Switching it ',
-          'off puts the original setting back.'),
-        state.settings.handleClaudeLinks && !state.linkHandling && el('div', { class: 'hint' },
-          el('b', {}, 'Claude has taken the link back. '), 'Facet reclaims it the next time it starts.'),
+          'one Claude is registered for. With it on, Facet asks which profile the link is for.'),
+        state.settings.handleClaudeLinks && renderLinkDefaultState(),
       ]),
       renderSettingsSection('Data & profiles', [
         el('div', { class: 'settings-current' },
@@ -586,6 +585,33 @@ function viewSettings() {
       el('div', { class: 'settings-danger' },
         el('button', { class: 'btn-danger', onclick: () => api.quit() }, 'Quit Facet'),
       ),
+    ),
+  );
+}
+
+// Claude Desktop from the Store claims claude:// through its package, which outranks anything
+// Facet can write. Only the choice made in Windows Settings beats that, and only a person can make
+// it — so this explains the one step and opens the right screen.
+function renderLinkDefaultState() {
+  const st = state.linkState;
+  if (!st) return el('div', { class: 'hint' }, 'Checking how Windows opens these links…');
+  if (st.userChoiceIsFacet) {
+    return el('div', { class: 'hint' }, el('b', { style: { color: 'var(--good)' } }, 'Windows sends claude:// links to Facet. '),
+      'You will be asked which profile each one is for.');
+  }
+  return el('div', {},
+    el('div', { class: 'preflight-warn' },
+      el('div', { class: 'preflight-head' }, ICONS.warn(),
+        el('span', {}, el('b', {}, 'Windows still opens these links with Claude. '),
+          'Claude Desktop claims them through its app package, and only you can change that — ',
+          'Windows does not let an app set it.')),
+    ),
+    el('div', { class: 'hint' },
+      'Open ', el('b', {}, 'Default apps'), ', search for ', el('b', {}, 'Facet'),
+      ', then set ', el('code', {}, 'CLAUDE'), ' under "Choose defaults by link type" to Facet.'),
+    el('div', { class: 'settings-actions' },
+      el('button', { class: 'btn-secondary', onclick: () => api.openWindowsLinkSettings() },
+        ICONS.arrowRight(), 'Open Windows default apps'),
     ),
   );
 }
@@ -791,7 +817,9 @@ async function refresh() {
   state.lockedSettings = data.lockedSettings || [];
   state.portable = !!data.portable;
   state.version = data.version || '';
-  if (state.view === 'settings') api.linkStatus().then((s) => { state.linkHandling = !!(s && s.handling); }).catch(() => {});
+  if (state.view === 'settings') {
+    api.linkStatus().then((st) => { state.linkState = st; render(); }).catch(() => {});
+  }
   state.orphanCount = data.orphanCount || 0;
   // Onboarding: show once if user has never seen it and no profiles yet
   if (state.settings && state.settings.onboardingComplete === false && state.profiles.length === 0) {
@@ -910,6 +938,9 @@ async function onResetCustomPath() {
 
 async function onToggleSetting(key, value) {
   await api.setSettings({ [key]: value });
+  if (key === 'handleClaudeLinks') {
+    state.linkState = await api.linkStatus().catch(() => null);
+  }
   await refresh(); render();
 }
 
@@ -964,6 +995,7 @@ function setView(v) {
     setTimeout(() => document.querySelector('.hotkey-recorder')?.focus(), 40);
   }
   if (v === 'recovery') loadOrphans();
+  if (v === 'settings') api.linkStatus().then((st) => { state.linkState = st; render(); }).catch(() => {});
   if (v === 'sessions') {
     // Default the log source to the adopted profile — it is the one using %APPDATA%\Claude.
     if (!state.sessions.logsProfileId) {

@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('facet', {
   openLink: (payload) => ipcRenderer.invoke('links:open', payload),
   cancelLink: () => ipcRenderer.invoke('links:cancel'),
   linkStatus: () => ipcRenderer.invoke('links:status'),
+  openWindowsLinkSettings: () => ipcRenderer.invoke('links:openWindowsSettings'),
   hide: () => ipcRenderer.invoke('panel:hide'),
   resize: (payload) => ipcRenderer.invoke('panel:resize', payload),
   openPath: (pathToOpen) => ipcRenderer.invoke('shell:open', { pathToOpen }),
