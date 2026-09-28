@@ -1414,7 +1414,10 @@ ipcMain.handle('links:status', () => linkHandlerState());
 // Windows only lets a person choose the default handler, so Facet can offer the screen, not the
 // switch. The protocol page cannot be deep-linked, so this opens the Default apps list.
 ipcMain.handle('links:openWindowsSettings', async () => {
-  await shell.openExternal('ms-settings:defaultapps');
+  // Deep-links straight to Facet's own page in Default apps. The search box on that screen looks
+  // for file and link types, not app names, which is why searching "Facet" there finds nothing.
+  try { await shell.openExternal('ms-settings:defaultapps?registeredAppUser=Facet'); }
+  catch { await shell.openExternal('ms-settings:defaultapps'); }
   return { ok: true };
 });
 
