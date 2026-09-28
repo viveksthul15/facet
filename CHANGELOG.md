@@ -25,6 +25,10 @@
   Turning the switch off restores whatever held the association before. Covered by
   `bench/verify-links.mjs`.
 
+  The registration is shared by every copy of Facet on the machine, so a portable copy or a test
+  build never tidies away the installed copy's registration: Facet only undoes what its own
+  executable put there, or what you switch off yourself.
+
 ### Fixed
 - **A click did nothing after Claude updated itself, and the profile kept a green dot.** The
   Microsoft Store build lives in a folder named after its version, so every update moves it.

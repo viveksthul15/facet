@@ -306,12 +306,20 @@ function claimClaudeLinks() {
 function registerLinkCapability() {
   try {
     regSet(LINK_PROGID_KEY, null, 'Claude link');
+    regSet(LINK_PROGID_KEY, 'FriendlyTypeName', 'Claude link');
     regSet(`${LINK_PROGID_KEY}\\shell\\open\\command`, null, facetLinkCommand());
     regSet(`${LINK_PROGID_KEY}\\DefaultIcon`, null, `"${process.execPath}",0`);
+    // Windows lists an app under Default apps from its Capabilities block; the Application subkey
+    // is what gives the entry a name there rather than a bare path.
+    regSet(`${LINK_PROGID_KEY}\\Application`, 'ApplicationName', 'Facet');
+    regSet(`${LINK_PROGID_KEY}\\Application`, 'ApplicationDescription', 'Opens Claude links in the profile you choose');
     regSet(LINK_CAPABILITIES_KEY, 'ApplicationName', 'Facet');
     regSet(LINK_CAPABILITIES_KEY, 'ApplicationDescription', 'Opens Claude links in the profile you choose');
     regSet(`${LINK_CAPABILITIES_KEY}\\UrlAssociations`, LINK_PROTOCOL, LINK_PROGID);
     regSet('HKCU\\Software\\RegisteredApplications', 'Facet', 'Software\\Facet\\Capabilities');
+    // offer Facet in the "open with" list for the protocol as well
+    regSet(`${LINK_KEY}\\OpenWithProgids`, LINK_PROGID, '');
+    refreshShellAssociations();
     return { ok: true };
   } catch (e) {
     log('warn', 'could not register as a link handler', e.message);
@@ -319,12 +327,33 @@ function registerLinkCapability() {
   }
 }
 
+/** Tell Explorer the associations changed, so Settings lists Facet without a sign-out. */
+function refreshShellAssociations() {
+  try {
+    execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+      'Add-Type -Namespace W -Name S -MemberDefinition \'[DllImport("shell32.dll")] public static extern void SHChangeNotify(int e, uint f, IntPtr a, IntPtr b);\'; [W.S]::SHChangeNotify(0x8000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)'],
+      { windowsHide: true, stdio: 'ignore', timeout: 15000 });
+  } catch (e) { log('warn', 'could not refresh shell associations', e.message); }
+}
+
+/**
+ * Is the registration on this machine ours? These keys are shared by every copy of Facet, so a
+ * portable copy — or a test build — must never tidy away what the installed one put there.
+ */
+function linkRegistrationIsThisExe() {
+  const cmd = regQuery(`${LINK_PROGID_KEY}\\shell\\open\\command`);
+  return !!cmd && cmd.toLowerCase().includes(process.execPath.toLowerCase());
+}
+
 function unregisterLinkCapability() {
+  if (!linkRegistrationIsThisExe()) return;   // it belongs to another copy of Facet
   for (const args of [['delete', LINK_PROGID_KEY, '/f'],
                       ['delete', 'HKCU\\Software\\Facet', '/f'],
-                      ['delete', 'HKCU\\Software\\RegisteredApplications', '/v', 'Facet', '/f']]) {
+                      ['delete', 'HKCU\\Software\\RegisteredApplications', '/v', 'Facet', '/f'],
+                      ['delete', `${LINK_KEY}\\OpenWithProgids`, '/v', LINK_PROGID, '/f']]) {
     try { execFileSync('reg.exe', args, { windowsHide: true, stdio: 'ignore' }); } catch {}
   }
+  refreshShellAssociations();
 }
 
 /** Is Facet the handler Windows will actually use — the user's own choice, or the plain key? */
@@ -342,6 +371,7 @@ function linkHandlerState() {
 /** Hand claude:// back to whatever had it before Facet took over. */
 function releaseClaudeLinks() {
   try {
+    if (!facetHandlesLinks()) return { ok: true };        // nothing of ours to hand back
     const backup = loadUserSettings().claudeLinkBackup;
     if (backup) {
       regSet(`${LINK_KEY}\\shell\\open\\command`, null, backup);
@@ -388,18 +418,24 @@ function reclaimLinksAfterLaunch() {
   }
 }
 
-function syncClaudeLinks() {
+/**
+ * `userAsked` is true only when the switch was just used. Without it, any copy of Facet that
+ * happens to run with the setting off — a portable one, a test build — would tear down the
+ * registration belonging to the installed copy, because these registry keys are shared.
+ */
+function syncClaudeLinks(userAsked = false) {
   if (process.platform !== 'win32') return;
   const on = !!loadSettings().handleClaudeLinks;
   if (on) {
     registerLinkCapability();     // so Facet can be picked in Windows Settings
-    if (!facetHandlesLinks()) claimClaudeLinks();   // enough on its own for non-Store Claude
+    if (!facetHandlesLinks()) claimClaudeLinks();   // enough on its own for the non-Store Claude
     startLinkWatch();
-  } else {
-    stopLinkWatch();
-    if (facetHandlesLinks()) releaseClaudeLinks();
-    unregisterLinkCapability();
+    return;
   }
+  stopLinkWatch();
+  if (!userAsked && !linkRegistrationIsThisExe()) return;   // another copy owns it: leave it alone
+  releaseClaudeLinks();
+  unregisterLinkCapability();
 }
 
 // A link can arrive before the panel exists — Windows starts Facet to handle it — so it waits here.
@@ -1011,7 +1047,7 @@ ipcMain.handle('settings:set', (_e, patch) => {
   invalidateClaudeExeCache();
   if ('launchAtLogin' in patch) syncLaunchAtLogin();
   if ('globalHotkey' in patch) syncGlobalHotkey();
-  if ('handleClaudeLinks' in patch) syncClaudeLinks();
+  if ('handleClaudeLinks' in patch) syncClaudeLinks(true);
   const { effective, locked } = getEffectiveSettings();
   return { settings: effective, locked };
 });
