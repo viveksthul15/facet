@@ -7,7 +7,7 @@
   "scripts": {
     "start": "npm run icons && electron .",
     "icons": "node scripts/generate-icons.js",
-    "build": "npm run icons && electron-builder --win --x64"
+    "build": "npm run icons && electron-builder --win --x64 --publish never"
   },
   "author": "vivek",
   "license": "MIT",
